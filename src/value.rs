@@ -1,4 +1,8 @@
-use std::fmt::{Display, Formatter};
+use std::{
+    convert::Infallible,
+    fmt::{Display, Formatter},
+    str::FromStr,
+};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
@@ -126,5 +130,13 @@ impl From<String> for Value {
 impl From<&str> for Value {
     fn from(value: &str) -> Self {
         Self::Str(value.to_string())
+    }
+}
+
+impl FromStr for Value {
+    type Err = Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self::Str(s.to_string()))
     }
 }

@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use miette::{Report, Result, bail};
 
 use crate::{element::Element, value::Value};
@@ -41,12 +43,24 @@ pub fn interpret(element: &Element, depth: u32) -> Result<Value> {
         }
 
         "print" => {
+            let newline = element
+                .attributes
+                .get("newline")
+                .and_then(|s| Value::from_str(s).unwrap().as_bool())
+                .unwrap_or(true);
+
             let mut output = String::new();
             for child in &element.children {
                 let value = interpret(child, depth + 1)?;
                 output.push_str(&value.to_string());
             }
-            println!("{output}");
+
+            if newline {
+                println!("{output}");
+            } else {
+                print!("{output}");
+            }
+
             Value::Null
         }
 
