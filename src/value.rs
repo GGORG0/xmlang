@@ -59,7 +59,7 @@ impl Value {
             Self::Bool(value) => Some(*value),
             Self::Str(value) => match value.to_lowercase().as_str() {
                 "false" | "0" | "off" | "no" | "" => Some(false),
-                _ => None,
+                _ => Some(true),
             },
             _ => None,
         }
