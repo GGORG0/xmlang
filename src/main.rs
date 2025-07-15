@@ -1,4 +1,4 @@
-use std::{env::args, path::Path};
+use std::{collections::HashMap, env::args, path::Path};
 
 use miette::Result;
 
@@ -22,7 +22,9 @@ fn main() -> Result<()> {
     let tree = parse(path)?;
     // print_tree(&tree, 0);
 
-    interpret(&tree, 0)?;
+    let mut variables = HashMap::new();
+
+    interpret(&tree, 0, &mut variables)?;
 
     Ok(())
 }

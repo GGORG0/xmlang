@@ -1,10 +1,13 @@
 use std::{
     convert::Infallible,
     fmt::{Display, Formatter},
-    iter::{Product, Sum},
-    ops::{Add, Mul},
+    iter::Sum,
+    ops::{Add, Div, Mul, Neg, Not, Sub},
     str::FromStr,
 };
+
+use miette::Diagnostic;
+use thiserror::Error;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
@@ -85,6 +88,16 @@ impl Value {
             Value::Str(_) => Some(Value::Str(self.to_string())),
         }
     }
+
+    pub fn type_name(&self) -> String {
+        match self {
+            Self::Null => "null".to_string(),
+            Self::Int(_) => "int".to_string(),
+            Self::Float(_) => "float".to_string(),
+            Self::Bool(_) => "bool".to_string(),
+            Self::Str(_) => "string".to_string(),
+        }
+    }
 }
 
 impl Display for Value {
@@ -103,6 +116,12 @@ impl Display for Value {
             Self::Str(value) => value.clone(),
         };
         write!(f, "{string}")
+    }
+}
+
+impl Default for Value {
+    fn default() -> Self {
+        Self::Null
     }
 }
 
@@ -186,11 +205,125 @@ impl Sum for Value {
     }
 }
 
+// an error raised when trying to perform operations on incompatible types
+#[derive(Debug, Clone, Error, Diagnostic)]
+#[error("Can't {operation} incompatible type{}: {}{}", if .b.is_some() { "s" } else { "" }, .a.type_name(), if let Some(right) = .b { format!(" and {}", right.type_name()) } else { String::new() })]
+pub struct OperationIncompatibleTypesError {
+    operation: String,
+    pub a: Value,
+    pub b: Option<Value>,
+}
+
+impl Neg for Value {
+    type Output = Result<Self, OperationIncompatibleTypesError>;
+
+    fn neg(self) -> Self::Output {
+        match self {
+            Self::Null => Ok(Self::Null),
+            Self::Int(value) => Ok(Self::Int(-value)),
+            Self::Float(value) => Ok(Self::Float(-value)),
+            Self::Bool(_) => Err(OperationIncompatibleTypesError {
+                operation: "negate".to_string(),
+                a: self,
+                b: None,
+            }),
+            Self::Str(_) => Err(OperationIncompatibleTypesError {
+                operation: "negate".to_string(),
+                a: self,
+                b: None,
+            }),
+        }
+    }
+}
+
+impl Not for Value {
+    type Output = Result<Self, OperationIncompatibleTypesError>;
+
+    fn not(self) -> Self::Output {
+        match self {
+            Self::Null => Ok(Self::Null),
+            Self::Int(value) => Ok(Self::Bool(value == 0)),
+            Self::Float(value) => Ok(Self::Bool(value == 0.0)),
+            Self::Bool(value) => Ok(Self::Bool(!value)),
+            Self::Str(_) => Err(OperationIncompatibleTypesError {
+                operation: "logically negate".to_string(),
+                a: self,
+                b: None,
+            }),
+        }
+    }
+}
+
+pub trait Abs {
+    type Output;
+    fn abs(self) -> Self::Output;
+}
+
+impl Abs for Value {
+    type Output = Result<Self, OperationIncompatibleTypesError>;
+    fn abs(self) -> Self::Output {
+        match self {
+            Self::Null => Ok(Self::Null),
+            Self::Int(value) => Ok(Self::Int(value.abs())),
+            Self::Float(value) => Ok(Self::Float(value.abs())),
+            Self::Bool(_) => Err(OperationIncompatibleTypesError {
+                operation: "compute absolute value of".to_string(),
+                a: self,
+                b: None,
+            }),
+            Self::Str(_) => Err(OperationIncompatibleTypesError {
+                operation: "compute absolute value of".to_string(),
+                a: self,
+                b: None,
+            }),
+        }
+    }
+}
+
+impl Sub for Value {
+    type Output = Result<Self, OperationIncompatibleTypesError>;
+
+    fn sub(self, other: Self) -> Self::Output {
+        match (self, other) {
+            (other, Self::Null) => Ok(other),
+
+            (s @ Self::Str(_), other) => Err(OperationIncompatibleTypesError {
+                operation: "subtract".to_string(),
+                a: s,
+                b: Some(other),
+            }),
+
+            (other, s @ Self::Str(_)) => Err(OperationIncompatibleTypesError {
+                operation: "subtract".to_string(),
+                a: other,
+                b: Some(s),
+            }),
+
+            (Self::Null, other) => -other,
+
+            (Self::Int(a), Self::Int(b)) => Ok(Self::Int(a - b)),
+            (Self::Float(a), Self::Float(b)) => Ok(Self::Float(a - b)),
+
+            (Self::Int(i), Self::Float(f)) => Ok(Self::Float(i as f64 - f)),
+            (Self::Float(f), Self::Int(i)) => Ok(Self::Float(f - i as f64)),
+
+            (a @ Self::Bool(_), b @ Self::Bool(_)) => {
+                Ok(Self::Int(a.as_int().unwrap() - b.as_int().unwrap()))
+            }
+
+            (b @ Self::Bool(_), Self::Int(i)) => Ok(Self::Int(b.as_int().unwrap() - i)),
+            (b @ Self::Bool(_), Self::Float(f)) => Ok(Self::Float(b.as_float().unwrap() - f)),
+            (Self::Int(i), b @ Self::Bool(_)) => Ok(Self::Int(i - b.as_int().unwrap())),
+            (Self::Float(f), b @ Self::Bool(_)) => Ok(Self::Float(f - b.as_float().unwrap())),
+        }
+    }
+}
+
 impl Mul for Value {
-    type Output = Self;
+    type Output = Result<Self, OperationIncompatibleTypesError>;
 
     fn mul(self, other: Self) -> Self::Output {
-        match (self, other) {
+        Ok(match (self, other) {
             (Self::Null, _) | (_, Self::Null) => Self::Null,
 
             (Self::Int(a), Self::Int(b)) => Self::Int(a * b),
@@ -210,32 +343,149 @@ impl Mul for Value {
                 }
             }
 
-            (Self::Str(a), Self::Str(b)) => match (a.parse::<f64>(), b.parse::<f64>()) {
-                (Ok(a), Ok(b)) => {
-                    if a.fract() != 0.0 || b.fract() != 0.0 {
-                        Self::Float(a * b)
-                    } else {
-                        Self::Int((a * b) as i64)
-                    }
-                }
-                (Err(_), Ok(b)) => Self::Str(a.repeat(b as usize)),
-                (Ok(a), Err(_)) => Self::Str(b.repeat(a as usize)),
-                _ => Self::Null,
-            },
+            (a @ Self::Str(_), b @ Self::Str(_)) => {
+                return Err(OperationIncompatibleTypesError {
+                    operation: "multiply".to_string(),
+                    a,
+                    b: Some(b),
+                });
+            }
 
             (Self::Str(s), Self::Int(i)) | (Self::Int(i), Self::Str(s)) => {
-                Self::Str(s.repeat(i as usize))
+                if i.is_negative() {
+                    Self::Str(
+                        s.chars()
+                            .rev()
+                            .collect::<String>()
+                            .repeat(i.unsigned_abs() as usize),
+                    )
+                } else {
+                    Self::Str(s.repeat(i as usize))
+                }
             }
             (Self::Str(s), Self::Float(f)) | (Self::Float(f), Self::Str(s)) => {
-                Self::Str(s.repeat(f as usize))
+                if f.is_sign_negative() {
+                    Self::Str(s.chars().rev().collect::<String>().repeat(f.abs() as usize))
+                } else {
+                    Self::Str(s.repeat(f as usize))
+                }
             }
-        }
+        })
     }
 }
 
-impl Product for Value {
-    fn product<I: Iterator<Item = Self>>(mut iter: I) -> Self {
-        let first = iter.next().unwrap_or(Self::Null);
-        iter.fold(first, |acc, value| acc * value)
+#[derive(Debug, Clone, Error, Diagnostic)]
+pub enum DivisionError {
+    #[error("Division by zero is not allowed")]
+    DivisionByZero,
+
+    #[error(transparent)]
+    IncompatibleTypes(#[from] OperationIncompatibleTypesError),
+}
+
+impl Div for Value {
+    type Output = Result<Self, DivisionError>;
+
+    fn div(self, other: Self) -> Self::Output {
+        match (self, other) {
+            (Self::Null, Self::Null) => Ok(Self::Null),
+            (Self::Null, other) => Err(DivisionError::IncompatibleTypes(
+                OperationIncompatibleTypesError {
+                    operation: "divide".to_string(),
+                    a: Self::Null,
+                    b: Some(other),
+                },
+            )),
+            (other, Self::Null) => Err(DivisionError::IncompatibleTypes(
+                OperationIncompatibleTypesError {
+                    operation: "divide".to_string(),
+                    a: other,
+                    b: Some(Self::Null),
+                },
+            )),
+
+            (Self::Int(a), Self::Int(b)) => {
+                if b == 0 {
+                    Err(DivisionError::DivisionByZero)
+                } else {
+                    Ok(Self::Int(a / b))
+                }
+            }
+            (Self::Float(a), Self::Float(b)) => {
+                if b == 0.0 {
+                    Err(DivisionError::DivisionByZero)
+                } else {
+                    Ok(Self::Float(a / b))
+                }
+            }
+
+            (Self::Int(i), Self::Float(f)) => {
+                if f == 0.0 {
+                    Err(DivisionError::DivisionByZero)
+                } else {
+                    Ok(Self::Float(i as f64 / f))
+                }
+            }
+            (Self::Float(f), Self::Int(i)) => {
+                if i == 0 {
+                    Err(DivisionError::DivisionByZero)
+                } else {
+                    Ok(Self::Float(f / i as f64))
+                }
+            }
+
+            (Self::Bool(a), Self::Bool(b)) => {
+                if !b {
+                    return Err(DivisionError::DivisionByZero);
+                }
+
+                Ok(Self::Int(
+                    Self::Bool(a).as_int().unwrap() / Self::Bool(b).as_int().unwrap(),
+                ))
+            }
+
+            (b @ Self::Bool(_), Self::Int(i)) => {
+                if i == 0 {
+                    return Err(DivisionError::DivisionByZero);
+                }
+                Ok(Self::Int(b.as_int().unwrap() / i))
+            }
+            (b @ Self::Bool(_), Self::Float(f)) => {
+                if f == 0.0 {
+                    Err(DivisionError::DivisionByZero)
+                } else {
+                    Ok(Self::Float(b.as_float().unwrap() / f))
+                }
+            }
+            (Self::Int(i), Self::Bool(b)) => {
+                if !b {
+                    Err(DivisionError::DivisionByZero)
+                } else {
+                    Ok(Self::Int(i / Self::Bool(b).as_int().unwrap()))
+                }
+            }
+            (Self::Float(f), Self::Bool(b)) => {
+                if !b {
+                    Err(DivisionError::DivisionByZero)
+                } else {
+                    Ok(Self::Float(f / Self::Bool(b).as_float().unwrap()))
+                }
+            }
+
+            (s @ Self::Str(_), other) => Err(DivisionError::IncompatibleTypes(
+                OperationIncompatibleTypesError {
+                    operation: "divide".to_string(),
+                    a: s,
+                    b: Some(other),
+                },
+            )),
+            (other, s @ Self::Str(_)) => Err(DivisionError::IncompatibleTypes(
+                OperationIncompatibleTypesError {
+                    operation: "divide".to_string(),
+                    a: other,
+                    b: Some(s),
+                },
+            )),
+        }
     }
 }
