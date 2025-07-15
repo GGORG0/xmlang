@@ -1,15 +1,16 @@
 use std::{env::args, path::Path};
 
-use color_eyre::Result;
+use miette::Result;
 
-use crate::{element::Element, parser::parse};
+use crate::{element::Element, interpreter::interpret, parser::parse};
 
 mod element;
+mod interpreter;
 mod parser;
 mod value;
 
 fn main() -> Result<()> {
-    color_eyre::install()?;
+    miette::set_panic_hook();
 
     // TODO: replace this with clap once we need more complex argument parsing
     let path = args()
@@ -19,7 +20,9 @@ fn main() -> Result<()> {
     let path = Path::new(&path);
 
     let tree = parse(path)?;
-    print_tree(&tree, 0);
+    // print_tree(&tree, 0);
+
+    interpret(&tree, 0)?;
 
     Ok(())
 }

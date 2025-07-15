@@ -1,6 +1,6 @@
 use std::{collections::HashMap, path::Path};
 
-use color_eyre::{Report, Result, eyre::bail};
+use miette::{IntoDiagnostic, Result, bail};
 use quick_xml::{
     Decoder, NsReader,
     events::{BytesStart, Event},
@@ -13,7 +13,7 @@ impl Element {
     fn from_event(ns: ResolveResult, e: BytesStart, decoder: &Decoder) -> Result<Self> {
         let ns = match ns {
             ResolveResult::Bound(ns) => {
-                let ns = decoder.decode(ns.as_ref())?;
+                let ns = decoder.decode(ns.as_ref()).into_diagnostic()?;
                 if ns.is_empty() {
                     None
                 } else {
@@ -22,20 +22,21 @@ impl Element {
             }
             ResolveResult::Unbound => None,
             ResolveResult::Unknown(ns) => {
-                let ns = decoder.decode(ns.as_ref())?;
+                let ns = decoder.decode(ns.as_ref()).into_diagnostic()?;
                 bail!("Unknown namespace: {}", ns);
             }
         };
 
         let name = e.name().local_name();
-        let name = decoder.decode(name.as_ref())?;
+        let name = decoder.decode(name.as_ref()).into_diagnostic()?;
 
         let attributes = e
             .attributes()
             .map(|attr| {
-                let attr = attr?;
-                let key = decoder.decode(attr.key.as_ref())?;
-                let value = decoder.decode(attr.value.as_ref())?;
+                // TODO: include a code snippet
+                let attr = attr.into_diagnostic()?;
+                let key = decoder.decode(attr.key.as_ref()).into_diagnostic()?;
+                let value = decoder.decode(attr.value.as_ref()).into_diagnostic()?;
                 Ok((key.to_string(), value.to_string()))
             })
             .collect::<Result<HashMap<_, _>>>()?;
@@ -50,7 +51,7 @@ impl Element {
 }
 
 pub fn parse(path: &Path) -> Result<Element> {
-    let mut reader = NsReader::from_file(path)?;
+    let mut reader = NsReader::from_file(path).into_diagnostic()?;
     reader.config_mut().trim_text(true);
     let mut buf = Vec::new();
     let decoder = reader.decoder();
@@ -78,8 +79,8 @@ pub fn parse(path: &Path) -> Result<Element> {
                     namespace: None,
                     name: String::new(),
                     attributes: HashMap::from([(
-                        "text-content".to_string(),
-                        decoder.decode(e.as_ref())?.to_string(),
+                        "_text".to_string(),
+                        decoder.decode(e.as_ref()).into_diagnostic()?.to_string(),
                     )]),
                     children: Vec::new(),
                 };
@@ -92,9 +93,7 @@ pub fn parse(path: &Path) -> Result<Element> {
             }
 
             Ok((_, Event::End(_))) => {
-                let completed_element = stack.pop().ok_or_else(|| {
-                    Report::msg("Unexpected end tag without a matching start tag")
-                })?;
+                let completed_element = stack.pop().unwrap();
 
                 if let Some(parent) = stack.last_mut() {
                     parent.children.push(completed_element);
@@ -105,6 +104,7 @@ pub fn parse(path: &Path) -> Result<Element> {
 
             Ok((ResolveResult::Unbound, Event::Eof)) => break,
 
+            // TODO: include a code snippet
             Err(e) => bail!("Error at position {}: {:?}", reader.error_position(), e),
 
             ev => {
