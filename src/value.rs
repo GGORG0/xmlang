@@ -1,7 +1,7 @@
 use std::{
     convert::Infallible,
     fmt::{Display, Formatter},
-    iter::Sum,
+    iter::{Product, Sum},
     ops::{Add, Mul},
     str::FromStr,
 };
@@ -166,12 +166,8 @@ impl Add for Value {
 
             (Self::Bool(a), Self::Bool(b)) => Self::Bool(a || b),
 
-            (Self::Bool(b), other) | (other, Self::Bool(b)) => {
-                if b {
-                    other
-                } else {
-                    Self::Null
-                }
+            (b @ Self::Bool(_), other) | (other, b @ Self::Bool(_)) => {
+                b.convert_to(&other).unwrap() + other
             }
 
             (Self::Str(a), Self::Str(b)) => Self::Str(a + &b),
@@ -187,5 +183,59 @@ impl Add for Value {
 impl Sum for Value {
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
         iter.fold(Self::Null, |acc, value| acc + value)
+    }
+}
+
+impl Mul for Value {
+    type Output = Self;
+
+    fn mul(self, other: Self) -> Self::Output {
+        match (self, other) {
+            (Self::Null, _) | (_, Self::Null) => Self::Null,
+
+            (Self::Int(a), Self::Int(b)) => Self::Int(a * b),
+            (Self::Float(a), Self::Float(b)) => Self::Float(a * b),
+
+            (Self::Int(i), Self::Float(f)) | (Self::Float(f), Self::Int(i)) => {
+                Self::Float(i as f64 * f)
+            }
+
+            (Self::Bool(a), Self::Bool(b)) => Self::Bool(a && b),
+
+            (Self::Bool(b), other) | (other, Self::Bool(b)) => {
+                if b {
+                    other
+                } else {
+                    Self::Null
+                }
+            }
+
+            (Self::Str(a), Self::Str(b)) => match (a.parse::<f64>(), b.parse::<f64>()) {
+                (Ok(a), Ok(b)) => {
+                    if a.fract() != 0.0 || b.fract() != 0.0 {
+                        Self::Float(a * b)
+                    } else {
+                        Self::Int((a * b) as i64)
+                    }
+                }
+                (Err(_), Ok(b)) => Self::Str(a.repeat(b as usize)),
+                (Ok(a), Err(_)) => Self::Str(b.repeat(a as usize)),
+                _ => Self::Null,
+            },
+
+            (Self::Str(s), Self::Int(i)) | (Self::Int(i), Self::Str(s)) => {
+                Self::Str(s.repeat(i as usize))
+            }
+            (Self::Str(s), Self::Float(f)) | (Self::Float(f), Self::Str(s)) => {
+                Self::Str(s.repeat(f as usize))
+            }
+        }
+    }
+}
+
+impl Product for Value {
+    fn product<I: Iterator<Item = Self>>(mut iter: I) -> Self {
+        let first = iter.next().unwrap_or(Self::Null);
+        iter.fold(first, |acc, value| acc * value)
     }
 }
