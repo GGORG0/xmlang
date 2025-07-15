@@ -1,3 +1,6 @@
+// TODO: remove
+#![feature(if_let_guard)]
+
 use std::{env::args, path::Path};
 
 use miette::Result;

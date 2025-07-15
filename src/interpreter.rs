@@ -105,6 +105,12 @@ pub fn interpret(element: &Element, depth: u32) -> Result<Value> {
             Value::Null
         }
 
+        "add" => element
+            .children
+            .iter()
+            .map(|child| interpret(child, depth + 1))
+            .sum::<Result<Value>>()?,
+
         _ => bail!("Unknown element: {}", element.name),
     })
 }

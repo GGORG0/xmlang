@@ -1,6 +1,8 @@
 use std::{
     convert::Infallible,
     fmt::{Display, Formatter},
+    iter::Sum,
+    ops::Add,
     str::FromStr,
 };
 
@@ -73,6 +75,16 @@ impl Value {
     pub fn is_str(&self) -> bool {
         matches!(self, Self::Str(_))
     }
+
+    pub fn convert_to(&self, target_type: &Value) -> Option<Value> {
+        match target_type {
+            Value::Null => self.as_null().map(|_| Value::Null),
+            Value::Int(_) => self.as_int().map(Value::Int),
+            Value::Float(_) => self.as_float().map(Value::Float),
+            Value::Bool(_) => Some(Value::Bool(self.as_bool())),
+            Value::Str(_) => Some(Value::Str(self.to_string())),
+        }
+    }
 }
 
 impl Display for Value {
@@ -135,5 +147,57 @@ impl FromStr for Value {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Self::Str(s.to_string()))
+    }
+}
+
+impl Add for Value {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self::Output {
+        match (self, other) {
+            (Self::Null, other) | (other, Self::Null) => other,
+
+            (Self::Int(a), Self::Int(b)) => Self::Int(a + b),
+            (Self::Float(a), Self::Float(b)) => Self::Float(a + b),
+
+            (Self::Int(i), Self::Float(f)) | (Self::Float(f), Self::Int(i)) => {
+                Self::Float(i as f64 + f)
+            }
+
+            (Self::Bool(a), Self::Bool(b)) => Self::Bool(a || b),
+
+            (Self::Bool(b), other) | (other, Self::Bool(b)) => {
+                if b {
+                    other
+                } else {
+                    Self::Null
+                }
+            }
+
+            (Self::Str(a), Self::Str(b)) => Self::Str(a + &b),
+
+            (Self::Str(s), Self::Int(i)) | (Self::Int(i), Self::Str(s))
+                if let Ok(s) = s.parse::<i64>() =>
+            {
+                Self::Int(s + i)
+            }
+
+            (Self::Str(s), Self::Float(f)) | (Self::Float(f), Self::Str(s))
+                if let Ok(s) = s.parse::<f64>() =>
+            {
+                Self::Float(s + f)
+            }
+
+            (Self::Str(s), Self::Int(i)) => Self::Str(s + &i.to_string()),
+            (Self::Int(i), Self::Str(s)) => Self::Str(i.to_string() + &s),
+            (Self::Str(s), Self::Float(f)) => Self::Str(s + &f.to_string()),
+            (Self::Float(f), Self::Str(s)) => Self::Str(f.to_string() + &s),
+        }
+    }
+}
+
+impl Sum for Value {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.fold(Self::Null, |acc, value| acc + value)
     }
 }
