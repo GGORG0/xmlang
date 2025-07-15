@@ -1,19 +1,24 @@
-use std::path::Path;
+use std::{env::args, path::Path};
 
 use color_eyre::Result;
 
 use crate::{element::Element, parser::parse};
 
 mod element;
-mod value;
 mod parser;
+mod value;
 
 fn main() -> Result<()> {
     color_eyre::install()?;
 
-    let test_file = Path::new("examples/test.xml");
+    // TODO: replace this with clap once we need more complex argument parsing
+    let path = args()
+        .nth(1)
+        .expect("Usage: cargo run -- <path_to_xml_file>");
 
-    let tree = parse(test_file)?;
+    let path = Path::new(&path);
+
+    let tree = parse(path)?;
     print_tree(&tree, 0);
 
     Ok(())
