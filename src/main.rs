@@ -2,8 +2,10 @@ use std::path::Path;
 
 use color_eyre::Result;
 
-use crate::parser::{Element, parse};
+use crate::{element::Element, parser::parse};
 
+mod element;
+mod value;
 mod parser;
 
 fn main() -> Result<()> {

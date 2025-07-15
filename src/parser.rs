@@ -7,13 +7,7 @@ use quick_xml::{
     name::ResolveResult,
 };
 
-#[derive(Debug, Clone)]
-pub struct Element {
-    pub namespace: Option<String>,
-    pub name: String,
-    pub attributes: HashMap<String, String>,
-    pub children: Vec<Element>,
-}
+use crate::element::Element;
 
 impl Element {
     fn from_event(ns: ResolveResult, e: BytesStart, decoder: &Decoder) -> Result<Self> {
