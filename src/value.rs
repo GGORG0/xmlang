@@ -32,7 +32,6 @@ impl Value {
             Self::Float(value) => Some(*value as i64),
             Self::Bool(value) => Some(if *value { 1 } else { 0 }),
             Self::Str(value) => value.parse::<i64>().ok(),
-            _ => None,
         }
     }
 
@@ -47,7 +46,6 @@ impl Value {
             Self::Float(value) => Some(*value),
             Self::Bool(value) => Some(if *value { 1.0 } else { 0.0 }),
             Self::Str(value) => value.parse::<f64>().ok(),
-            _ => None,
         }
     }
 
@@ -55,17 +53,16 @@ impl Value {
         matches!(self, Self::Float(_))
     }
 
-    pub fn as_bool(&self) -> Option<bool> {
+    pub fn as_bool(&self) -> bool {
         match self {
-            Self::Null => Some(false),
-            Self::Int(value) => Some(*value != 0),
-            Self::Float(value) => Some(*value != 0.0),
-            Self::Bool(value) => Some(*value),
-            Self::Str(value) => match value.to_lowercase().as_str() {
-                "false" | "0" | "off" | "no" | "" => Some(false),
-                _ => Some(true),
-            },
-            _ => None,
+            Self::Null => false,
+            Self::Int(value) => *value != 0,
+            Self::Float(value) => *value != 0.0,
+            Self::Bool(value) => *value,
+            Self::Str(value) => !matches!(
+                value.to_lowercase().as_str(),
+                "false" | "0" | "off" | "no" | ""
+            ),
         }
     }
 

@@ -1,19 +1,14 @@
-use std::str::FromStr;
-
-use miette::{Report, Result, bail};
+use miette::{Context, Report, Result, bail, ensure};
 
 use crate::{element::Element, value::Value};
 
 // TODO: include code snippets with errors
 pub fn interpret(element: &Element, depth: u32) -> Result<Value> {
     Ok(match element.name.to_lowercase().as_str() {
-        "program" if depth == 0 => {
-            let mut last_value = Value::Null;
-            for child in &element.children {
-                last_value = interpret(child, depth + 1)?;
-            }
-            last_value
-        }
+        "program" if depth == 0 => element
+            .children
+            .iter()
+            .try_fold(Value::Null, |_, child| interpret(child, depth + 1))?,
         _ if depth == 0 => bail!("Root element must be <program>"),
 
         "space" => {
@@ -22,7 +17,9 @@ pub fn interpret(element: &Element, depth: u32) -> Result<Value> {
                 .get("count")
                 .and_then(|s| s.parse::<usize>().ok())
                 .unwrap_or(1);
+
             let spaces = " ".repeat(count);
+
             Value::Str(spaces)
         }
 
@@ -42,11 +39,55 @@ pub fn interpret(element: &Element, depth: u32) -> Result<Value> {
             Value::Str(text)
         }
 
+        "null" => Value::Null,
+
+        name @ ("int" | "integer") => {
+            ensure!(
+                element.children.len() == 1,
+                "Expected exactly one child in <{name}> element"
+            );
+
+            let child = &element.children[0];
+            let value = interpret(child, depth + 1)?;
+
+            value
+                .as_int()
+                .wrap_err("Failed to convert value to an integer")?
+                .into()
+        }
+
+        "float" => {
+            ensure!(
+                element.children.len() == 1,
+                "Expected exactly one child in <float> element"
+            );
+
+            let child = &element.children[0];
+            let value = interpret(child, depth + 1)?;
+
+            value
+                .as_float()
+                .wrap_err("Failed to convert value to a float")?
+                .into()
+        }
+
+        "bool" => {
+            ensure!(
+                element.children.len() == 1,
+                "Expected exactly one child in <bool> element"
+            );
+
+            let child = &element.children[0];
+            let value = interpret(child, depth + 1)?;
+
+            value.as_bool().into()
+        }
+
         "print" => {
             let newline = element
                 .attributes
                 .get("newline")
-                .and_then(|s| Value::from_str(s).unwrap().as_bool())
+                .map(|s| Value::from(s.as_str()).as_bool())
                 .unwrap_or(true);
 
             let mut output = String::new();
