@@ -2,7 +2,7 @@ use std::{
     convert::Infallible,
     fmt::{Display, Formatter},
     iter::Sum,
-    ops::Add,
+    ops::{Add, Mul},
     str::FromStr,
 };
 
@@ -175,18 +175,6 @@ impl Add for Value {
             }
 
             (Self::Str(a), Self::Str(b)) => Self::Str(a + &b),
-
-            (Self::Str(s), Self::Int(i)) | (Self::Int(i), Self::Str(s))
-                if let Ok(s) = s.parse::<i64>() =>
-            {
-                Self::Int(s + i)
-            }
-
-            (Self::Str(s), Self::Float(f)) | (Self::Float(f), Self::Str(s))
-                if let Ok(s) = s.parse::<f64>() =>
-            {
-                Self::Float(s + f)
-            }
 
             (Self::Str(s), Self::Int(i)) => Self::Str(s + &i.to_string()),
             (Self::Int(i), Self::Str(s)) => Self::Str(i.to_string() + &s),
