@@ -133,6 +133,32 @@ pub fn interpret(
             output.into()
         }
 
+        "join" => {
+            let separator = element
+                .attributes
+                .get("separator")
+                .cloned()
+                .unwrap_or_else(|| " ".to_string());
+
+            let start = element.attributes.get("start").cloned().unwrap_or_default();
+
+            let end = element.attributes.get("end").cloned().unwrap_or_default();
+
+            let values = element
+                .children
+                .iter()
+                .map(|child| interpret(child, depth + 1, variables, specials))
+                .collect::<Result<Vec<Value>>>()?;
+
+            let joined = values
+                .into_iter()
+                .map(|value| value.to_string())
+                .collect::<Vec<_>>()
+                .join(&separator);
+
+            Value::Str([start, joined, end].concat())
+        }
+
         name @ ("unwrap" | "expect") => {
             ensure!(
                 element.children.len() == 1,
