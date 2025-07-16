@@ -1,6 +1,9 @@
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    io::{self, Write},
+};
 
-use miette::{Context, Report, Result, bail, ensure};
+use miette::{Context, IntoDiagnostic, Report, Result, bail, ensure};
 
 use crate::{
     element::Element,
@@ -128,9 +131,52 @@ pub fn interpret(
                 println!("{output}");
             } else {
                 print!("{output}");
+                io::stdout().flush().into_diagnostic()?;
             }
 
             output.into()
+        }
+
+        "readline" => {
+            let mut input = String::new();
+            io::stdin().read_line(&mut input).into_diagnostic()?;
+
+            Value::Str(input.trim_end_matches('\n').to_string())
+        }
+
+        "trim" => {
+            let start = element
+                .attributes
+                .get("start")
+                .map(|s| Value::from(s.as_str()).as_bool())
+                .unwrap_or(true);
+
+            let end = element
+                .attributes
+                .get("end")
+                .map(|s| Value::from(s.as_str()).as_bool())
+                .unwrap_or(true);
+
+            ensure!(
+                element.children.len() == 1,
+                "Expected exactly one child in <trim> element"
+            );
+
+            let child = &element.children[0];
+            let value = interpret(child, depth + 1, variables, specials)?;
+
+            let value = value.to_string();
+
+            (if start && end {
+                value.trim()
+            } else if start {
+                value.trim_start()
+            } else if end {
+                value.trim_end()
+            } else {
+                &value
+            })
+            .into()
         }
 
         "join" => {
