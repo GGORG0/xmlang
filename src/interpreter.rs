@@ -353,6 +353,10 @@ pub fn interpret(
             })?
         }
 
+        "block" => element.children.iter().try_fold(Value::Null, |_, child| {
+            interpret(child, depth + 1, variables, specials)
+        })?,
+
         _ => bail!("Unknown element: {}", element.name),
     })
 }
