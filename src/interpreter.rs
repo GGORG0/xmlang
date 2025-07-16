@@ -521,6 +521,19 @@ pub fn interpret(
             values.try_fold(first, |acc, value| acc / value)?
         }
 
+        "mod" | "modulo" | "remainder" => {
+            let values = element
+                .children
+                .iter()
+                .map(|child| interpret(child, depth + 1, variables, specials))
+                .collect::<Result<Vec<Value>>>()?;
+
+            let mut values = values.into_iter();
+
+            let first = values.next().unwrap_or_default();
+            values.try_fold(first, |acc, value| acc % value)?
+        }
+
         name @ ("eq" | "equals" | "equal") => {
             ensure!(
                 element.children.len() >= 2,

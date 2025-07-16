@@ -3,7 +3,7 @@ use std::{
     convert::Infallible,
     fmt::{Display, Formatter},
     iter::Sum,
-    ops::{Add, AddAssign, Div, Mul, Neg, Not, Sub},
+    ops::{Add, AddAssign, Div, Mul, Neg, Not, Rem, Sub},
     str::FromStr,
 };
 
@@ -490,6 +490,113 @@ impl Div for Value {
             (other, s @ Self::Str(_)) => Err(DivisionError::IncompatibleTypes(
                 OperationIncompatibleTypesError {
                     operation: "divide".to_string(),
+                    a: other,
+                    b: Some(s),
+                },
+            )),
+        }
+    }
+}
+
+impl Rem for Value {
+    type Output = Result<Self, DivisionError>;
+
+    fn rem(self, other: Self) -> Self::Output {
+        match (self, other) {
+            (Self::Null, Self::Null) => Ok(Self::Null),
+            (Self::Null, other) => Err(DivisionError::IncompatibleTypes(
+                OperationIncompatibleTypesError {
+                    operation: "modulo".to_string(),
+                    a: Self::Null,
+                    b: Some(other),
+                },
+            )),
+            (other, Self::Null) => Err(DivisionError::IncompatibleTypes(
+                OperationIncompatibleTypesError {
+                    operation: "modulo".to_string(),
+                    a: other,
+                    b: Some(Self::Null),
+                },
+            )),
+
+            (Self::Int(a), Self::Int(b)) => {
+                if b == 0 {
+                    Err(DivisionError::DivisionByZero)
+                } else {
+                    Ok(Self::Int(a % b))
+                }
+            }
+            (Self::Float(a), Self::Float(b)) => {
+                if b == 0.0 {
+                    Err(DivisionError::DivisionByZero)
+                } else {
+                    Ok(Self::Float(a % b))
+                }
+            }
+
+            (Self::Int(i), Self::Float(f)) => {
+                if f == 0.0 {
+                    Err(DivisionError::DivisionByZero)
+                } else {
+                    Ok(Self::Float(i as f64 % f))
+                }
+            }
+            (Self::Float(f), Self::Int(i)) => {
+                if i == 0 {
+                    Err(DivisionError::DivisionByZero)
+                } else {
+                    Ok(Self::Float(f % i as f64))
+                }
+            }
+
+            (Self::Bool(a), Self::Bool(b)) => {
+                if !b {
+                    return Err(DivisionError::DivisionByZero);
+                }
+
+                Ok(Self::Int(
+                    Self::Bool(a).as_int().unwrap() % Self::Bool(b).as_int().unwrap(),
+                ))
+            }
+
+            (b @ Self::Bool(_), Self::Int(i)) => {
+                if i == 0 {
+                    return Err(DivisionError::DivisionByZero);
+                }
+                Ok(Self::Int(b.as_int().unwrap() % i))
+            }
+            (b @ Self::Bool(_), Self::Float(f)) => {
+                if f == 0.0 {
+                    Err(DivisionError::DivisionByZero)
+                } else {
+                    Ok(Self::Float(b.as_float().unwrap() % f))
+                }
+            }
+            (Self::Int(i), Self::Bool(b)) => {
+                if !b {
+                    Err(DivisionError::DivisionByZero)
+                } else {
+                    Ok(Self::Int(i % Self::Bool(b).as_int().unwrap()))
+                }
+            }
+            (Self::Float(f), Self::Bool(b)) => {
+                if !b {
+                    Err(DivisionError::DivisionByZero)
+                } else {
+                    Ok(Self::Float(f % Self::Bool(b).as_float().unwrap()))
+                }
+            }
+
+            (s @ Self::Str(_), other) => Err(DivisionError::IncompatibleTypes(
+                OperationIncompatibleTypesError {
+                    operation: "modulo".to_string(),
+                    a: s,
+                    b: Some(other),
+                },
+            )),
+            (other, s @ Self::Str(_)) => Err(DivisionError::IncompatibleTypes(
+                OperationIncompatibleTypesError {
+                    operation: "modulo".to_string(),
                     a: other,
                     b: Some(s),
                 },
