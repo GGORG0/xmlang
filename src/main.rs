@@ -21,9 +21,7 @@ fn main() -> Result<()> {
 
     let tree = parse(path)?;
 
-    let mut variables = HashMap::new();
-
-    interpret(&tree, 0, &mut variables, &[])?;
+    interpret(&tree, 0, &mut HashMap::new(), &[], &mut HashMap::new())?;
 
     Ok(())
 }

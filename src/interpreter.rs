@@ -34,11 +34,12 @@ pub fn interpret(
     depth: u32,
     variables: &mut HashMap<String, Value>,
     specials: &[HashMap<String, Value>],
+    functions: &mut HashMap<String, Vec<Element>>,
 ) -> Result<Value> {
     Ok(match element.name.to_lowercase().as_str() {
         "program" if depth == 0 => {
             match element.children.iter().try_fold(Value::Null, |_, child| {
-                interpret(child, depth + 1, variables, specials)
+                interpret(child, depth + 1, variables, specials, functions)
             }) {
                 Ok(val) => val,
                 Err(err) => match err.downcast::<BlockControl>() {
@@ -66,7 +67,7 @@ pub fn interpret(
             let text = element.children.iter().try_fold(
                 element.attributes.get("_text").cloned().unwrap_or_default(),
                 |value, child| {
-                    let child_value = interpret(child, depth + 1, variables, specials)?;
+                    let child_value = interpret(child, depth + 1, variables, specials, functions)?;
 
                     Ok::<_, Report>(if child_value.is_null() {
                         value
@@ -87,7 +88,7 @@ pub fn interpret(
             );
 
             let child = &element.children[0];
-            let value = interpret(child, depth + 1, variables, specials)?;
+            let value = interpret(child, depth + 1, variables, specials, functions)?;
 
             value
                 .as_int()
@@ -102,7 +103,7 @@ pub fn interpret(
             );
 
             let child = &element.children[0];
-            let value = interpret(child, depth + 1, variables, specials)?;
+            let value = interpret(child, depth + 1, variables, specials, functions)?;
 
             value
                 .as_float()
@@ -117,7 +118,7 @@ pub fn interpret(
             );
 
             let child = &element.children[0];
-            let value = interpret(child, depth + 1, variables, specials)?;
+            let value = interpret(child, depth + 1, variables, specials, functions)?;
 
             value.as_bool().into()
         }
@@ -129,7 +130,7 @@ pub fn interpret(
             let values = element
                 .children
                 .iter()
-                .map(|child| interpret(child, depth + 1, variables, specials))
+                .map(|child| interpret(child, depth + 1, variables, specials, functions))
                 .collect::<Result<Vec<Value>>>()?;
 
             let types = values
@@ -158,7 +159,7 @@ pub fn interpret(
                 );
 
                 let child = &element.children[0];
-                let value = interpret(child, depth + 1, variables, specials)?;
+                let value = interpret(child, depth + 1, variables, specials, functions)?;
 
                 value
                     .as_int()
@@ -179,7 +180,7 @@ pub fn interpret(
 
             let mut output = String::new();
             for child in &element.children {
-                let value = interpret(child, depth + 1, variables, specials)?;
+                let value = interpret(child, depth + 1, variables, specials, functions)?;
                 output.push_str(&value.to_string());
             }
 
@@ -219,7 +220,7 @@ pub fn interpret(
             );
 
             let child = &element.children[0];
-            let value = interpret(child, depth + 1, variables, specials)?;
+            let value = interpret(child, depth + 1, variables, specials, functions)?;
 
             let value = value.to_string();
 
@@ -249,7 +250,7 @@ pub fn interpret(
             let values = element
                 .children
                 .iter()
-                .map(|child| interpret(child, depth + 1, variables, specials))
+                .map(|child| interpret(child, depth + 1, variables, specials, functions))
                 .collect::<Result<Vec<Value>>>()?;
 
             let joined = values
@@ -268,7 +269,7 @@ pub fn interpret(
             );
 
             let child = &element.children[0];
-            let value = interpret(child, depth + 1, variables, specials)?;
+            let value = interpret(child, depth + 1, variables, specials, functions)?;
 
             if value.is_null() {
                 let msg = element
@@ -290,7 +291,8 @@ pub fn interpret(
                 let text = element.children.iter().try_fold(
                     element.attributes.get("_text").cloned().unwrap_or_default(),
                     |value, child| {
-                        let child_value = interpret(child, depth + 1, variables, specials)?;
+                        let child_value =
+                            interpret(child, depth + 1, variables, specials, functions)?;
 
                         Ok::<_, Report>(if child_value.is_null() {
                             value
@@ -318,7 +320,7 @@ pub fn interpret(
                 Value::Null
             } else {
                 let child = &element.children[0];
-                interpret(child, depth + 1, variables, specials)?
+                interpret(child, depth + 1, variables, specials, functions)?
             };
 
             return Err(BlockControl::Break(value).into());
@@ -346,7 +348,7 @@ pub fn interpret(
                     );
 
                     let child = &element.children[0];
-                    interpret(child, depth + 1, variables, specials)?
+                    interpret(child, depth + 1, variables, specials, functions)?
                 }
             } else {
                 ensure!(
@@ -355,7 +357,7 @@ pub fn interpret(
                 );
 
                 let child = &element.children[0];
-                let value = interpret(child, depth + 1, variables, specials)?;
+                let value = interpret(child, depth + 1, variables, specials, functions)?;
 
                 variables
                     .get(&value.to_string())
@@ -377,7 +379,7 @@ pub fn interpret(
             );
 
             let child = &element.children[0];
-            let value = interpret(child, depth + 1, variables, specials)?;
+            let value = interpret(child, depth + 1, variables, specials, functions)?;
 
             variables.insert(name, value.clone());
 
@@ -397,7 +399,7 @@ pub fn interpret(
                 );
 
                 let child = &element.children[0];
-                let value = interpret(child, depth + 1, variables, specials)?;
+                let value = interpret(child, depth + 1, variables, specials, functions)?;
 
                 let name = value.to_string();
 
@@ -411,7 +413,7 @@ pub fn interpret(
         "add" | "sum" => element
             .children
             .iter()
-            .map(|child| interpret(child, depth + 1, variables, specials))
+            .map(|child| interpret(child, depth + 1, variables, specials, functions))
             .sum::<Result<Value>>()?,
 
         name @ ("neg" | "negate" | "negative") => {
@@ -421,7 +423,7 @@ pub fn interpret(
             );
 
             let child = &element.children[0];
-            let value = interpret(child, depth + 1, variables, specials)?;
+            let value = interpret(child, depth + 1, variables, specials, functions)?;
 
             (-value)?
         }
@@ -433,7 +435,7 @@ pub fn interpret(
             );
 
             let child = &element.children[0];
-            let value = interpret(child, depth + 1, variables, specials)?;
+            let value = interpret(child, depth + 1, variables, specials, functions)?;
 
             (!value)?
         }
@@ -447,7 +449,7 @@ pub fn interpret(
             let values = element
                 .children
                 .iter()
-                .map(|child| interpret(child, depth + 1, variables, specials))
+                .map(|child| interpret(child, depth + 1, variables, specials, functions))
                 .collect::<Result<Vec<Value>>>()?;
 
             let all_true = values.iter().all(|value| value.as_bool());
@@ -463,7 +465,7 @@ pub fn interpret(
             let values = element
                 .children
                 .iter()
-                .map(|child| interpret(child, depth + 1, variables, specials))
+                .map(|child| interpret(child, depth + 1, variables, specials, functions))
                 .collect::<Result<Vec<Value>>>()?;
 
             let any_true = values.iter().any(|value| value.as_bool());
@@ -477,7 +479,7 @@ pub fn interpret(
             );
 
             let child = &element.children[0];
-            let value = interpret(child, depth + 1, variables, specials)?;
+            let value = interpret(child, depth + 1, variables, specials, functions)?;
 
             value.abs()?
         }
@@ -486,7 +488,7 @@ pub fn interpret(
             let values = element
                 .children
                 .iter()
-                .map(|child| interpret(child, depth + 1, variables, specials))
+                .map(|child| interpret(child, depth + 1, variables, specials, functions))
                 .collect::<Result<Vec<Value>>>()?;
 
             let mut values = values.into_iter();
@@ -499,7 +501,7 @@ pub fn interpret(
             let values = element
                 .children
                 .iter()
-                .map(|child| interpret(child, depth + 1, variables, specials))
+                .map(|child| interpret(child, depth + 1, variables, specials, functions))
                 .collect::<Result<Vec<Value>>>()?;
 
             let mut values = values.into_iter();
@@ -512,7 +514,7 @@ pub fn interpret(
             let values = element
                 .children
                 .iter()
-                .map(|child| interpret(child, depth + 1, variables, specials))
+                .map(|child| interpret(child, depth + 1, variables, specials, functions))
                 .collect::<Result<Vec<Value>>>()?;
 
             let mut values = values.into_iter();
@@ -525,7 +527,7 @@ pub fn interpret(
             let values = element
                 .children
                 .iter()
-                .map(|child| interpret(child, depth + 1, variables, specials))
+                .map(|child| interpret(child, depth + 1, variables, specials, functions))
                 .collect::<Result<Vec<Value>>>()?;
 
             let mut values = values.into_iter();
@@ -543,7 +545,7 @@ pub fn interpret(
             let values = element
                 .children
                 .iter()
-                .map(|child| interpret(child, depth + 1, variables, specials))
+                .map(|child| interpret(child, depth + 1, variables, specials, functions))
                 .collect::<Result<Vec<Value>>>()?;
 
             let all_equal = values.windows(2).all(|w| w[0] == w[1]);
@@ -559,7 +561,7 @@ pub fn interpret(
             let values = element
                 .children
                 .iter()
-                .map(|child| interpret(child, depth + 1, variables, specials))
+                .map(|child| interpret(child, depth + 1, variables, specials, functions))
                 .collect::<Result<Vec<Value>>>()?;
 
             let all_not_equal = values.windows(2).all(|w| w[0] != w[1]);
@@ -575,7 +577,7 @@ pub fn interpret(
             let values = element
                 .children
                 .iter()
-                .map(|child| interpret(child, depth + 1, variables, specials))
+                .map(|child| interpret(child, depth + 1, variables, specials, functions))
                 .collect::<Result<Vec<Value>>>()?;
 
             let all_less_than = values.windows(2).all(|w| w[0] < w[1]);
@@ -592,7 +594,7 @@ pub fn interpret(
             let values = element
                 .children
                 .iter()
-                .map(|child| interpret(child, depth + 1, variables, specials))
+                .map(|child| interpret(child, depth + 1, variables, specials, functions))
                 .collect::<Result<Vec<Value>>>()?;
 
             let all_less_than_or_equal = values.windows(2).all(|w| w[0] <= w[1]);
@@ -609,7 +611,7 @@ pub fn interpret(
             let values = element
                 .children
                 .iter()
-                .map(|child| interpret(child, depth + 1, variables, specials))
+                .map(|child| interpret(child, depth + 1, variables, specials, functions))
                 .collect::<Result<Vec<Value>>>()?;
 
             let all_greater_than = values.windows(2).all(|w| w[0] > w[1]);
@@ -626,7 +628,7 @@ pub fn interpret(
             let values = element
                 .children
                 .iter()
-                .map(|child| interpret(child, depth + 1, variables, specials))
+                .map(|child| interpret(child, depth + 1, variables, specials, functions))
                 .collect::<Result<Vec<Value>>>()?;
 
             let all_greater_than_or_equal = values.windows(2).all(|w| w[0] >= w[1]);
@@ -653,7 +655,7 @@ pub fn interpret(
                 .wrap_err("Expected a <catch> child in <try> element")?;
 
             let ret = do_block.children.iter().try_fold(Value::Null, |_, child| {
-                interpret(child, depth + 1, variables, specials)
+                interpret(child, depth + 1, variables, specials, functions)
             });
 
             match ret {
@@ -671,7 +673,7 @@ pub fn interpret(
                             .children
                             .iter()
                             .try_fold(Value::Null, |_, child| {
-                                interpret(child, depth + 1, variables, &specials)
+                                interpret(child, depth + 1, variables, &specials, functions)
                             }) {
                             Ok(val) => val,
                             Err(err) => match err.downcast::<BlockControl>() {
@@ -689,7 +691,7 @@ pub fn interpret(
 
         "block" => {
             match element.children.iter().try_fold(Value::Null, |_, child| {
-                interpret(child, depth + 1, variables, specials)
+                interpret(child, depth + 1, variables, specials, functions)
             }) {
                 Ok(val) => val,
                 Err(err) => match err.downcast::<BlockControl>() {
@@ -789,8 +791,13 @@ pub fn interpret(
                 condition.children.len() == 1,
                 "Expected exactly one child in <condition> element"
             );
-            let condition_value =
-                interpret(&condition.children[0], depth + 2, variables, specials)?;
+            let condition_value = interpret(
+                &condition.children[0],
+                depth + 2,
+                variables,
+                specials,
+                functions,
+            )?;
 
             let specials = [
                 &[HashMap::from([(
@@ -806,7 +813,7 @@ pub fn interpret(
                     .children
                     .iter()
                     .try_fold(Value::Null, |_, child| {
-                        interpret(child, depth + 1, variables, &specials)
+                        interpret(child, depth + 1, variables, &specials, functions)
                     }) {
                     Ok(val) => val,
                     Err(err) => match err.downcast::<BlockControl>() {
@@ -833,8 +840,13 @@ pub fn interpret(
                         elif_condition.children.len() == 1,
                         "Expected exactly one child in <condition> element"
                     );
-                    let elif_condition_value =
-                        interpret(&elif_condition.children[0], depth + 2, variables, &specials)?;
+                    let elif_condition_value = interpret(
+                        &elif_condition.children[0],
+                        depth + 2,
+                        variables,
+                        &specials,
+                        functions,
+                    )?;
 
                     let elif_specials = [
                         &[HashMap::from([(
@@ -848,7 +860,7 @@ pub fn interpret(
                     if elif_condition_value.as_bool() {
                         return Ok(
                             match elif_then.children.iter().try_fold(Value::Null, |_, child| {
-                                interpret(child, depth + 1, variables, &elif_specials)
+                                interpret(child, depth + 1, variables, &elif_specials, functions)
                             }) {
                                 Ok(val) => val,
                                 Err(err) => match err.downcast::<BlockControl>() {
@@ -868,7 +880,7 @@ pub fn interpret(
                         .children
                         .iter()
                         .try_fold(Value::Null, |_, child| {
-                            interpret(child, depth + 1, variables, &specials)
+                            interpret(child, depth + 1, variables, &specials, functions)
                         }) {
                         Ok(val) => val,
                         Err(err) => match err.downcast::<BlockControl>() {
@@ -916,7 +928,7 @@ pub fn interpret(
                 }
 
                 for child in &element.children {
-                    if let Err(err) = interpret(child, depth + 1, variables, &specials) {
+                    if let Err(err) = interpret(child, depth + 1, variables, &specials, functions) {
                         match err.downcast::<BlockControl>() {
                             Err(e) => break 'outer Err(e),
                             Ok(BlockControl::Break(value)) => break 'outer Ok(value),
@@ -927,6 +939,75 @@ pub fn interpret(
 
                 iteration += 1;
             }?
+        }
+
+        "function" => {
+            let name = element
+                .attributes
+                .get("name")
+                .wrap_err("Expected the `name` attribute in <function> element")?
+                .clone();
+
+            ensure!(
+                !name.is_empty(),
+                "Function name cannot be empty in <function> element"
+            );
+
+            functions.insert(name, element.children.clone());
+
+            Value::Null
+        }
+
+        "call" => {
+            let name = element
+                .attributes
+                .get("name")
+                .wrap_err("Expected the `name` attribute in <call> element")?
+                .clone();
+
+            let func = functions
+                .get(&name)
+                .cloned()
+                .wrap_err(format!("Function `{name}` not found"))?;
+
+            let children = element
+                .children
+                .iter()
+                .map(|child| interpret(child, depth + 1, variables, specials, functions))
+                .collect::<Result<Vec<Value>>>()?;
+
+            let child_count = children.len();
+
+            let children_specials = children
+                .into_iter()
+                .enumerate()
+                .map(|(i, value)| (format!("child:{i}"), value))
+                .chain(std::iter::once((
+                    String::from("child_count"),
+                    Value::Int(child_count as i64),
+                )))
+                .collect::<HashMap<_, _>>();
+
+            let attrs = element
+                .attributes
+                .iter()
+                .map(|(k, v)| (k.clone(), Value::from(v.as_str())))
+                .collect::<HashMap<_, _>>();
+
+            let specials = [&[attrs, children_specials], specials].concat();
+
+            let mut variables = variables.clone();
+
+            match func.into_iter().try_fold(Value::Null, |_, child| {
+                interpret(&child, depth + 1, &mut variables, &specials, functions)
+            }) {
+                Ok(val) => val,
+                Err(err) => match err.downcast::<BlockControl>() {
+                    Ok(BlockControl::Break(val)) => val,
+                    Ok(BlockControl::Continue) => return Err(BlockControl::Continue.into()),
+                    Err(err) => return Err(err),
+                },
+            }
         }
 
         _ => bail!("Unknown element: {}", element.name),
