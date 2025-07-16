@@ -20,41 +20,10 @@ fn main() -> Result<()> {
     let path = Path::new(&path);
 
     let tree = parse(path)?;
-    // print_tree(&tree, 0);
 
     let mut variables = HashMap::new();
 
     interpret(&tree, 0, &mut variables, &[])?;
 
     Ok(())
-}
-
-fn print_tree(element: &Element, indent: usize) {
-    let indent_str = " ".repeat(indent);
-
-    let attrs_str = if element.attributes.is_empty() {
-        String::new()
-    } else {
-        let attrs: Vec<String> = element
-            .attributes
-            .iter()
-            .map(|(k, v)| format!("{k}=\"{v}\""))
-            .collect();
-        format!(
-            "{}{}",
-            if element.name.is_empty() { "" } else { " " },
-            attrs.join(" ")
-        )
-    };
-
-    println!(
-        "{}{}{}",
-        indent_str,
-        element.name,
-        attrs_str
-    );
-
-    for child in &element.children {
-        print_tree(child, indent + 2);
-    }
 }
