@@ -1,6 +1,8 @@
 use std::{
     collections::HashMap,
     io::{self, Write},
+    thread::sleep,
+    time::Duration,
 };
 
 use miette::{Context, IntoDiagnostic, Report, Result, bail, ensure};
@@ -112,6 +114,32 @@ pub fn interpret(
             } else {
                 types.join(" ")
             })
+        }
+
+        name @ ("delay" | "sleep") => {
+            let duration = if let Some(duration) = element
+                .attributes
+                .get("duration")
+                .and_then(|s| s.parse::<u64>().ok())
+            {
+                duration
+            } else {
+                ensure!(
+                    element.children.len() == 1,
+                    "Expected exactly one child or the `duration` attribute in <{name}> element"
+                );
+
+                let child = &element.children[0];
+                let value = interpret(child, depth + 1, variables, specials)?;
+
+                value
+                    .as_int()
+                    .wrap_err("Failed to convert value to an integer")? as u64
+            };
+
+            sleep(Duration::from_millis(duration));
+
+            Value::Null
         }
 
         "print" => {
