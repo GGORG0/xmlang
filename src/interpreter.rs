@@ -97,6 +97,9 @@ pub fn interpret(
             value.as_bool().into()
         }
 
+        "true" => Value::Bool(true),
+        "false" => Value::Bool(false),
+
         "type" => {
             let values = element
                 .children
@@ -385,6 +388,38 @@ pub fn interpret(
             (!value)?
         }
 
+        "and" => {
+            ensure!(
+                element.children.len() >= 2,
+                "Expected at least 2 children in <and> element"
+            );
+
+            let values = element
+                .children
+                .iter()
+                .map(|child| interpret(child, depth + 1, variables, specials))
+                .collect::<Result<Vec<Value>>>()?;
+
+            let all_true = values.iter().all(|value| value.as_bool());
+            Value::Bool(all_true)
+        }
+
+        "or" => {
+            ensure!(
+                element.children.len() >= 2,
+                "Expected at least 2 children in <or> element"
+            );
+
+            let values = element
+                .children
+                .iter()
+                .map(|child| interpret(child, depth + 1, variables, specials))
+                .collect::<Result<Vec<Value>>>()?;
+
+            let any_true = values.iter().any(|value| value.as_bool());
+            Value::Bool(any_true)
+        }
+
         name @ ("abs" | "absolute") => {
             ensure!(
                 element.children.len() == 1,
@@ -436,6 +471,106 @@ pub fn interpret(
             values.try_fold(first, |acc, value| acc / value)?
         }
 
+        name @ ("eq" | "equals" | "equal") => {
+            ensure!(
+                element.children.len() >= 2,
+                "Expected at least 2 children in <{name}> element"
+            );
+
+            let values = element
+                .children
+                .iter()
+                .map(|child| interpret(child, depth + 1, variables, specials))
+                .collect::<Result<Vec<Value>>>()?;
+
+            let all_equal = values.windows(2).all(|w| w[0] == w[1]);
+            Value::Bool(all_equal)
+        }
+
+        name @ ("ne" | "not-equals" | "not-equal") => {
+            ensure!(
+                element.children.len() >= 2,
+                "Expected at least 2 children in <{name}> element"
+            );
+
+            let values = element
+                .children
+                .iter()
+                .map(|child| interpret(child, depth + 1, variables, specials))
+                .collect::<Result<Vec<Value>>>()?;
+
+            let all_not_equal = values.windows(2).all(|w| w[0] != w[1]);
+            Value::Bool(all_not_equal)
+        }
+
+        name @ ("lt" | "less-than") => {
+            ensure!(
+                element.children.len() >= 2,
+                "Expected at least 2 children in <{name}> element"
+            );
+
+            let values = element
+                .children
+                .iter()
+                .map(|child| interpret(child, depth + 1, variables, specials))
+                .collect::<Result<Vec<Value>>>()?;
+
+            let all_less_than = values.windows(2).all(|w| w[0] < w[1]);
+
+            Value::Bool(all_less_than)
+        }
+
+        name @ ("le" | "less-than-or-equal") => {
+            ensure!(
+                element.children.len() >= 2,
+                "Expected at least 2 children in <{name}> element"
+            );
+
+            let values = element
+                .children
+                .iter()
+                .map(|child| interpret(child, depth + 1, variables, specials))
+                .collect::<Result<Vec<Value>>>()?;
+
+            let all_less_than_or_equal = values.windows(2).all(|w| w[0] <= w[1]);
+
+            Value::Bool(all_less_than_or_equal)
+        }
+
+        name @ ("gt" | "greater-than") => {
+            ensure!(
+                element.children.len() >= 2,
+                "Expected at least 2 children in <{name}> element"
+            );
+
+            let values = element
+                .children
+                .iter()
+                .map(|child| interpret(child, depth + 1, variables, specials))
+                .collect::<Result<Vec<Value>>>()?;
+
+            let all_greater_than = values.windows(2).all(|w| w[0] > w[1]);
+
+            Value::Bool(all_greater_than)
+        }
+
+        name @ ("ge" | "greater-than-or-equal") => {
+            ensure!(
+                element.children.len() >= 2,
+                "Expected at least 2 children in <{name}> element"
+            );
+
+            let values = element
+                .children
+                .iter()
+                .map(|child| interpret(child, depth + 1, variables, specials))
+                .collect::<Result<Vec<Value>>>()?;
+
+            let all_greater_than_or_equal = values.windows(2).all(|w| w[0] >= w[1]);
+
+            Value::Bool(all_greater_than_or_equal)
+        }
+
         "try" => {
             ensure!(
                 element.children.len() == 2,
@@ -475,6 +610,76 @@ pub fn interpret(
         "block" => element.children.iter().try_fold(Value::Null, |_, child| {
             interpret(child, depth + 1, variables, specials)
         })?,
+
+        "if" => {
+            ensure!(
+                element.children.len() >= 2,
+                "Expected at least 2 children in <if> element"
+            );
+
+            let mut seen = HashMap::new();
+            for child in element.children.iter() {
+                let key = child.name.to_lowercase();
+                if !["condition", "then", "else"].contains(&key.as_str()) {
+                    bail!("Unexpected child in <if> element: {}", child.name);
+                }
+                let count = seen.entry(key.clone()).or_insert(0);
+                *count += 1;
+                if *count > 1 {
+                    bail!("Duplicate <{}> child in <if> element", key);
+                }
+            }
+
+            let condition = element
+                .children
+                .iter()
+                .find(|child| child.name.to_lowercase() == "condition")
+                .wrap_err("Expected a <condition> child in <if> element")?;
+
+            let then_block = element
+                .children
+                .iter()
+                .find(|child| child.name.to_lowercase() == "then")
+                .wrap_err("Expected a <then> child in <if> element")?;
+
+            let else_block = element
+                .children
+                .iter()
+                .find(|child| child.name.to_lowercase() == "else");
+
+            ensure!(
+                condition.children.len() == 1,
+                "Expected exactly one child in <condition> element"
+            );
+            let condition_value = interpret(&condition.children[0], depth + 2, variables, specials)?;
+
+            let specials = [
+                &[HashMap::from([(
+                    "condition".to_string(),
+                    condition_value.clone(),
+                )])],
+                specials,
+            ]
+            .concat();
+
+            if condition_value.as_bool() {
+                then_block
+                    .children
+                    .iter()
+                    .try_fold(Value::Null, |_, child| {
+                        interpret(child, depth + 1, variables, &specials)
+                    })?
+            } else if let Some(else_block) = else_block {
+                else_block
+                    .children
+                    .iter()
+                    .try_fold(Value::Null, |_, child| {
+                        interpret(child, depth + 1, variables, &specials)
+                    })?
+            } else {
+                Value::Null
+            }
+        }
 
         _ => bail!("Unknown element: {}", element.name),
     })

@@ -1,4 +1,5 @@
 use std::{
+    cmp::Ordering,
     convert::Infallible,
     fmt::{Display, Formatter},
     iter::Sum,
@@ -486,6 +487,31 @@ impl Div for Value {
                     b: Some(s),
                 },
             )),
+        }
+    }
+}
+
+impl PartialOrd for Value {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        match (self, other) {
+            (Self::Null, Self::Null) => Some(Ordering::Equal),
+            (Self::Null, _) | (_, Self::Null) => None,
+
+            (Self::Int(a), Self::Int(b)) => a.partial_cmp(b),
+            (Self::Float(a), Self::Float(b)) => a.partial_cmp(b),
+
+            (Self::Int(i), Self::Float(f)) => (*i as f64).partial_cmp(f),
+            (Self::Float(f), Self::Int(i)) => f.partial_cmp(&(*i as f64)),
+
+            (Self::Bool(a), Self::Bool(b)) => a.partial_cmp(b),
+
+            (b @ Self::Bool(_), Self::Int(i)) => b.as_int().unwrap().partial_cmp(i),
+            (Self::Int(i), b @ Self::Bool(_)) => i.partial_cmp(&b.as_int().unwrap()),
+            (b @ Self::Bool(_), Self::Float(f)) => b.as_float().unwrap().partial_cmp(f),
+            (Self::Float(f), b @ Self::Bool(_)) => f.partial_cmp(&b.as_float().unwrap()),
+
+            (Self::Str(a), Self::Str(b)) => a.partial_cmp(b),
+            (_, Self::Str(_)) | (Self::Str(_), _) => None,
         }
     }
 }
