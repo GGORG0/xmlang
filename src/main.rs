@@ -48,13 +48,8 @@ fn print_tree(element: &Element, indent: usize) {
     };
 
     println!(
-        "{}{}{}{}",
+        "{}{}{}",
         indent_str,
-        element
-            .namespace
-            .as_ref()
-            .map(|x| [x, " -> "].concat())
-            .unwrap_or_default(),
         element.name,
         attrs_str
     );
