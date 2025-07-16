@@ -2,7 +2,7 @@ use std::{collections::HashMap, env::args, path::Path};
 
 use miette::Result;
 
-use crate::{element::Element, interpreter::interpret, parser::parse};
+use crate::{interpreter::interpret, parser::parse};
 
 mod element;
 mod interpreter;
@@ -15,7 +15,7 @@ fn main() -> Result<()> {
     // TODO: replace this with clap once we need more complex argument parsing
     let path = args()
         .nth(1)
-        .expect("Usage: cargo run -- <path_to_xml_file>");
+        .expect("Provide the path to the XML file as the first command line argument");
 
     let path = Path::new(&path);
 
