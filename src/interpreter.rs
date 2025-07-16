@@ -706,18 +706,33 @@ pub fn interpret(
                 "Expected at least 2 children in <if> element"
             );
 
-            let mut seen = HashMap::new();
+            let mut condition_count = 0;
+            let mut then_count = 0;
+            let mut else_count = 0;
+
             for child in element.children.iter() {
                 let key = child.name.to_lowercase();
-                if !["condition", "then", "else"].contains(&key.as_str()) {
-                    bail!("Unexpected child in <if> element: {}", child.name);
-                }
-                let count = seen.entry(key.clone()).or_insert(0);
-                *count += 1;
-                if *count > 1 {
-                    bail!("Duplicate <{}> child in <if> element", key);
+                match key.as_str() {
+                    "condition" => condition_count += 1,
+                    "then" => then_count += 1,
+                    "elif" => {}
+                    "else" => else_count += 1,
+                    _ => bail!("Unexpected child in <if> element: {}", child.name),
                 }
             }
+
+            ensure!(
+                condition_count == 1,
+                "Expected exactly one <condition> child in <if> element"
+            );
+            ensure!(
+                then_count == 1,
+                "Expected exactly one <then> child in <if> element"
+            );
+            ensure!(
+                else_count <= 1,
+                "Expected at most one <else> child in <if> element"
+            );
 
             let condition = element
                 .children
@@ -731,10 +746,44 @@ pub fn interpret(
                 .find(|child| child.name.to_lowercase() == "then")
                 .wrap_err("Expected a <then> child in <if> element")?;
 
+            let elif_blocks: Vec<&Element> = element
+                .children
+                .iter()
+                .filter(|child| child.name.to_lowercase() == "elif")
+                .collect();
+
             let else_block = element
                 .children
                 .iter()
                 .find(|child| child.name.to_lowercase() == "else");
+
+            for elif_block in &elif_blocks {
+                ensure!(
+                    elif_block.children.len() == 2,
+                    "Expected exactly 2 children in <elif> element"
+                );
+
+                let mut elif_condition_count = 0;
+                let mut elif_then_count = 0;
+
+                for child in elif_block.children.iter() {
+                    let key = child.name.to_lowercase();
+                    match key.as_str() {
+                        "condition" => elif_condition_count += 1,
+                        "then" => elif_then_count += 1,
+                        _ => bail!("Unexpected child in <elif> element: {}", child.name),
+                    }
+                }
+
+                ensure!(
+                    elif_condition_count == 1,
+                    "Expected exactly one <condition> child in <elif> element"
+                );
+                ensure!(
+                    elif_then_count == 1,
+                    "Expected exactly one <then> child in <elif> element"
+                );
+            }
 
             ensure!(
                 condition.children.len() == 1,
@@ -766,22 +815,71 @@ pub fn interpret(
                         Err(err) => return Err(err),
                     },
                 }
-            } else if let Some(else_block) = else_block {
-                match else_block
-                    .children
-                    .iter()
-                    .try_fold(Value::Null, |_, child| {
-                        interpret(child, depth + 1, variables, &specials)
-                    }) {
-                    Ok(val) => val,
-                    Err(err) => match err.downcast::<BlockControl>() {
-                        Ok(BlockControl::Break(val)) => val,
-                        Ok(BlockControl::Continue) => return Err(BlockControl::Continue.into()),
-                        Err(err) => return Err(err),
-                    },
-                }
             } else {
-                Value::Null
+                for elif_block in &elif_blocks {
+                    let elif_condition = elif_block
+                        .children
+                        .iter()
+                        .find(|child| child.name.to_lowercase() == "condition")
+                        .unwrap();
+
+                    let elif_then = elif_block
+                        .children
+                        .iter()
+                        .find(|child| child.name.to_lowercase() == "then")
+                        .unwrap();
+
+                    ensure!(
+                        elif_condition.children.len() == 1,
+                        "Expected exactly one child in <condition> element"
+                    );
+                    let elif_condition_value =
+                        interpret(&elif_condition.children[0], depth + 2, variables, &specials)?;
+
+                    let elif_specials = [
+                        &[HashMap::from([(
+                            "condition".to_string(),
+                            elif_condition_value.clone(),
+                        )])],
+                        &specials[..],
+                    ]
+                    .concat();
+
+                    if elif_condition_value.as_bool() {
+                        return Ok(
+                            match elif_then.children.iter().try_fold(Value::Null, |_, child| {
+                                interpret(child, depth + 1, variables, &elif_specials)
+                            }) {
+                                Ok(val) => val,
+                                Err(err) => match err.downcast::<BlockControl>() {
+                                    Ok(BlockControl::Break(val)) => val,
+                                    Ok(BlockControl::Continue) => {
+                                        return Err(BlockControl::Continue.into());
+                                    }
+                                    Err(err) => return Err(err),
+                                },
+                            },
+                        );
+                    }
+                }
+
+                if let Some(else_block) = else_block {
+                    match else_block
+                        .children
+                        .iter()
+                        .try_fold(Value::Null, |_, child| {
+                            interpret(child, depth + 1, variables, &specials)
+                        }) {
+                        Ok(val) => val,
+                        Err(err) => match err.downcast::<BlockControl>() {
+                            Ok(BlockControl::Break(val)) => val,
+                            Ok(BlockControl::Continue) => return Err(BlockControl::Continue.into()),
+                            Err(err) => return Err(err),
+                        },
+                    }
+                } else {
+                    Value::Null
+                }
             }
         }
 
