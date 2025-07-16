@@ -20,15 +20,15 @@ pub enum Value {
 }
 
 impl Value {
+    pub fn is_null(&self) -> bool {
+        matches!(self, Self::Null)
+    }
+
     pub fn as_null(&self) -> Option<()> {
         match self {
             Self::Null => Some(()),
             _ => None,
         }
-    }
-
-    pub fn is_null(&self) -> bool {
-        matches!(self, Self::Null)
     }
 
     pub fn as_int(&self) -> Option<i64> {
@@ -41,10 +41,6 @@ impl Value {
         }
     }
 
-    pub fn is_int(&self) -> bool {
-        matches!(self, Self::Int(_))
-    }
-
     pub fn as_float(&self) -> Option<f64> {
         match self {
             Self::Null => Some(0.0),
@@ -53,10 +49,6 @@ impl Value {
             Self::Bool(value) => Some(if *value { 1.0 } else { 0.0 }),
             Self::Str(value) => value.parse::<f64>().ok(),
         }
-    }
-
-    pub fn is_float(&self) -> bool {
-        matches!(self, Self::Float(_))
     }
 
     pub fn as_bool(&self) -> bool {
@@ -70,14 +62,6 @@ impl Value {
                 "false" | "0" | "off" | "no" | ""
             ),
         }
-    }
-
-    pub fn is_bool(&self) -> bool {
-        matches!(self, Self::Bool(_))
-    }
-
-    pub fn is_str(&self) -> bool {
-        matches!(self, Self::Str(_))
     }
 
     pub fn convert_to(&self, target_type: &Value) -> Option<Value> {
