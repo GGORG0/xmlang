@@ -198,7 +198,7 @@ pub fn interpret(
             let mut input = String::new();
             io::stdin().read_line(&mut input).into_diagnostic()?;
 
-            Value::Str(input.trim_end_matches('\n').to_string())
+            Value::Str(input.trim_end_matches(['\r', '\n']).to_string())
         }
 
         "trim" => {
