@@ -3,7 +3,7 @@ use std::{
     convert::Infallible,
     fmt::{Display, Formatter},
     iter::Sum,
-    ops::{Add, Div, Mul, Neg, Not, Sub},
+    ops::{Add, AddAssign, Div, Mul, Neg, Not, Sub},
     str::FromStr,
 };
 
@@ -203,6 +203,13 @@ impl Add for Value {
 impl Sum for Value {
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
         iter.fold(Self::Null, |acc, value| acc + value)
+    }
+}
+
+impl AddAssign for Value {
+    fn add_assign(&mut self, other: Self) {
+        // TODO: modify in-place instead of cloning
+        *self = self.clone() + other;
     }
 }
 

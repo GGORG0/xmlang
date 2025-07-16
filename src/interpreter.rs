@@ -5,12 +5,28 @@ use std::{
     time::Duration,
 };
 
-use miette::{Context, IntoDiagnostic, Report, Result, bail, ensure};
+use miette::{Context, Diagnostic, IntoDiagnostic, Report, Result, bail, ensure};
+use thiserror::Error;
 
 use crate::{
     element::Element,
     value::{Abs, Value},
 };
+
+// hacky!
+#[derive(Debug, Clone, Error, Diagnostic)]
+enum BlockControl {
+    #[error("")] // this should never be seen by the user
+    Break(Value),
+    #[error("Tried to continue outside of a loop")]
+    Continue,
+}
+
+impl Default for BlockControl {
+    fn default() -> Self {
+        Self::Break(Value::Null)
+    }
+}
 
 // TODO: include code snippets with errors
 pub fn interpret(
@@ -20,9 +36,18 @@ pub fn interpret(
     specials: &[HashMap<String, Value>],
 ) -> Result<Value> {
     Ok(match element.name.to_lowercase().as_str() {
-        "program" if depth == 0 => element.children.iter().try_fold(Value::Null, |_, child| {
-            interpret(child, depth + 1, variables, specials)
-        })?,
+        "program" if depth == 0 => {
+            match element.children.iter().try_fold(Value::Null, |_, child| {
+                interpret(child, depth + 1, variables, specials)
+            }) {
+                Ok(val) => val,
+                Err(err) => match err.downcast::<BlockControl>() {
+                    Ok(BlockControl::Break(val)) => val,
+                    Ok(BlockControl::Continue) => return Err(BlockControl::Continue.into()),
+                    Err(err) => return Err(err),
+                },
+            }
+        }
         _ if depth == 0 => bail!("Root element must be <program>"),
 
         "space" => {
@@ -281,6 +306,31 @@ pub fn interpret(
                     bail!(text);
                 }
             }
+        }
+
+        name @ ("return" | "break") => {
+            ensure!(
+                element.children.len() <= 1,
+                "Expected at most one child in <{name}> element"
+            );
+
+            let value = if element.children.is_empty() {
+                Value::Null
+            } else {
+                let child = &element.children[0];
+                interpret(child, depth + 1, variables, specials)?
+            };
+
+            return Err(BlockControl::Break(value).into());
+        }
+
+        name @ ("continue" | "next") => {
+            ensure!(
+                element.children.is_empty(),
+                "Expected no children in <{name}> element"
+            );
+
+            return Err(BlockControl::Continue.into());
         }
 
         "get" => {
@@ -593,23 +643,49 @@ pub fn interpret(
                 interpret(child, depth + 1, variables, specials)
             });
 
-            ret.or_else(|err| {
-                let err = Value::from(err.to_string());
+            match ret {
+                Ok(val) => val,
+                Err(err) => match err.downcast::<BlockControl>() {
+                    Ok(BlockControl::Break(val)) => val,
+                    Ok(BlockControl::Continue) => return Err(BlockControl::Continue.into()),
 
-                let specials = [&[HashMap::from([("error".to_string(), err)])], specials].concat();
+                    Err(err) => {
+                        let err_val = Value::from(err.to_string());
+                        let specials =
+                            [&[HashMap::from([("error".to_string(), err_val)])], specials].concat();
 
-                catch_block
-                    .children
-                    .iter()
-                    .try_fold(Value::Null, |_, child| {
-                        interpret(child, depth + 1, variables, &specials)
-                    })
-            })?
+                        match catch_block
+                            .children
+                            .iter()
+                            .try_fold(Value::Null, |_, child| {
+                                interpret(child, depth + 1, variables, &specials)
+                            }) {
+                            Ok(val) => val,
+                            Err(err) => match err.downcast::<BlockControl>() {
+                                Ok(BlockControl::Break(val)) => val,
+                                Ok(BlockControl::Continue) => {
+                                    return Err(BlockControl::Continue.into());
+                                }
+                                Err(err) => return Err(err),
+                            },
+                        }
+                    }
+                },
+            }
         }
 
-        "block" => element.children.iter().try_fold(Value::Null, |_, child| {
-            interpret(child, depth + 1, variables, specials)
-        })?,
+        "block" => {
+            match element.children.iter().try_fold(Value::Null, |_, child| {
+                interpret(child, depth + 1, variables, specials)
+            }) {
+                Ok(val) => val,
+                Err(err) => match err.downcast::<BlockControl>() {
+                    Ok(BlockControl::Break(val)) => val,
+                    Ok(BlockControl::Continue) => return Err(BlockControl::Continue.into()),
+                    Err(err) => return Err(err),
+                },
+            }
+        }
 
         "if" => {
             ensure!(
@@ -651,7 +727,8 @@ pub fn interpret(
                 condition.children.len() == 1,
                 "Expected exactly one child in <condition> element"
             );
-            let condition_value = interpret(&condition.children[0], depth + 2, variables, specials)?;
+            let condition_value =
+                interpret(&condition.children[0], depth + 2, variables, specials)?;
 
             let specials = [
                 &[HashMap::from([(
@@ -663,22 +740,82 @@ pub fn interpret(
             .concat();
 
             if condition_value.as_bool() {
-                then_block
+                match then_block
                     .children
                     .iter()
                     .try_fold(Value::Null, |_, child| {
                         interpret(child, depth + 1, variables, &specials)
-                    })?
+                    }) {
+                    Ok(val) => val,
+                    Err(err) => match err.downcast::<BlockControl>() {
+                        Ok(BlockControl::Break(val)) => val,
+                        Ok(BlockControl::Continue) => return Err(BlockControl::Continue.into()),
+                        Err(err) => return Err(err),
+                    },
+                }
             } else if let Some(else_block) = else_block {
-                else_block
+                match else_block
                     .children
                     .iter()
                     .try_fold(Value::Null, |_, child| {
                         interpret(child, depth + 1, variables, &specials)
-                    })?
+                    }) {
+                    Ok(val) => val,
+                    Err(err) => match err.downcast::<BlockControl>() {
+                        Ok(BlockControl::Break(val)) => val,
+                        Ok(BlockControl::Continue) => return Err(BlockControl::Continue.into()),
+                        Err(err) => return Err(err),
+                    },
+                }
             } else {
                 Value::Null
             }
+        }
+
+        "loop" => {
+            let start = element
+                .attributes
+                .get("start")
+                .and_then(|s| s.parse::<i64>().ok())
+                .unwrap_or(0);
+
+            let end = element
+                .attributes
+                .get("end")
+                .and_then(|s| s.parse::<i64>().ok());
+
+            let mut iteration = start;
+
+            let mut specials = [
+                &[HashMap::from([(
+                    "iteration".to_string(),
+                    Value::Int(iteration),
+                )])],
+                specials,
+            ]
+            .concat();
+
+            'outer: loop {
+                specials[0].insert("iteration".to_string(), Value::Int(iteration));
+
+                if let Some(end) = end
+                    && iteration >= end
+                {
+                    break 'outer Ok(Value::Null);
+                }
+
+                for child in &element.children {
+                    if let Err(err) = interpret(child, depth + 1, variables, &specials) {
+                        match err.downcast::<BlockControl>() {
+                            Err(e) => break 'outer Err(e),
+                            Ok(BlockControl::Break(value)) => break 'outer Ok(value),
+                            Ok(BlockControl::Continue) => continue 'outer,
+                        }
+                    }
+                }
+
+                iteration += 1;
+            }?
         }
 
         _ => bail!("Unknown element: {}", element.name),
