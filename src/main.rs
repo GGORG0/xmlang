@@ -24,7 +24,7 @@ fn main() -> Result<()> {
 
     let mut variables = HashMap::new();
 
-    interpret(&tree, 0, &mut variables)?;
+    interpret(&tree, 0, &mut variables, &[])?;
 
     Ok(())
 }
