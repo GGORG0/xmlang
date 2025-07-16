@@ -92,6 +92,25 @@ pub fn interpret(
             value.as_bool().into()
         }
 
+        "type" => {
+            let values = element
+                .children
+                .iter()
+                .map(|child| interpret(child, depth + 1, variables, specials))
+                .collect::<Result<Vec<Value>>>()?;
+
+            let types = values
+                .into_iter()
+                .map(|value| value.type_name())
+                .collect::<Vec<_>>();
+
+            Value::Str(if types.is_empty() {
+                Value::Null.type_name()
+            } else {
+                types.join(" ")
+            })
+        }
+
         "print" => {
             let newline = element
                 .attributes
