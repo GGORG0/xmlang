@@ -390,7 +390,7 @@ pub fn interpret(
 
             ensure!(
                 element.children.len() == 1,
-                "Expected exactly one child or the `var` attribute in <get> element"
+                "Expected exactly one child in <set> element"
             );
 
             let child = &element.children[0];
