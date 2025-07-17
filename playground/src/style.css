@@ -31,3 +31,10 @@ body {
   margin: 10px;
   z-index: 999;
 }
+
+@media screen and (orientation: portrait) {
+  #app {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 1fr;
+  }
+}
