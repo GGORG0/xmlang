@@ -1,0 +1,5 @@
+<!-- Hello world - The classic hello world program -->
+
+<program>
+    <print>Hello, World!</print>
+</program>

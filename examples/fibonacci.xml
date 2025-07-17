@@ -1,0 +1,105 @@
+<!-- Fibonacci - Calculates a number from the Fibonacci sequence. Demonstrates the use of functions, as well as complex if statements.  -->
+
+<program>
+    <function name="fibonacci">
+        <set var="n"><special name="child:0" /></set>
+        <if>
+            <condition>
+                <eq><get var="n" /><int>0</int></eq>
+            </condition>
+            <then>
+                <int>0</int>
+            </then>
+            <elif>
+                <condition>
+                    <eq><get var="n" /><int>1</int></eq>
+                </condition>
+                <then>
+                    <int>1</int>
+                </then>
+            </elif>
+            <else>
+                <add>
+                    <call name="fibonacci">
+                        <sub><get var="n" /><int>1</int></sub>
+                    </call>
+                    <call name="fibonacci">
+                        <sub><get var="n" /><int>2</int></sub>
+                    </call>
+                </add>
+            </else>
+        </if>
+    </function>
+
+    <print newline="false">Which Fibonacci number do you want? <space /></print>
+
+    <set var="n">
+        <int><readline /></int>
+    </set>
+
+    <if>
+        <condition>
+            <le>
+                <get var="n" />
+                <int>0</int>
+            </le>
+        </condition>
+        <then>
+            <print>Please enter a number bigger than 0.</print>
+            <exit code="1" />
+        </then>
+    </if>
+
+    <set var="suffix">
+        <if>
+            <condition>
+                <and>
+                    <ge>
+                        <get var="n" />
+                        <int>11</int>
+                    </ge>
+                    <le>
+                        <get var="n" />
+                        <int>13</int>
+                    </le>
+                </and>
+            </condition>
+            <then>th</then>
+
+            <elif>
+                <condition>
+                    <ends-with>
+                        <get var="n" />
+                        <int>1</int>
+                    </ends-with>
+                </condition>
+                <then>st</then>
+            </elif>
+            <elif>
+                <condition>
+                    <ends-with>
+                        <get var="n" />
+                        <int>2</int>
+                    </ends-with>
+                </condition>
+                <then>nd</then>
+            </elif>
+            <elif>
+                <condition>
+                    <ends-with>
+                        <get var="n" />
+                        <int>3</int>
+                    </ends-with>
+                </condition>
+                <then>rd</then>
+            </elif>
+
+            <else>th</else>
+        </if>
+    </set>
+
+    <print>
+        The <space /> <get var="n" /><get var="suffix" /> <space /> Fibonacci number is: <space />
+        <call name="fibonacci"><sub><get var="n" /><int>1</int></sub></call>
+    </print>
+</program>

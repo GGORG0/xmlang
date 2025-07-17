@@ -1,0 +1,44 @@
+<!-- FizzBuzz - Demonstrates the use of loops and if statements. See: <https://esolangs.org/wiki/FizzBuzz>.  -->
+
+<program>
+    <loop start="1" end="101">
+        <set var="printed"><bool>false</bool></set>
+        <if>
+            <condition>
+                <not>
+                    <mod>
+                        <special name="iteration" />
+                        <int>3</int>
+                    </mod>
+                </not>
+            </condition>
+            <then>
+                <set var="printed"><bool>true</bool></set>
+                <print newline="false">Fizz</print>
+            </then>
+        </if>
+        <if>
+            <condition>
+                <not>
+                    <mod>
+                        <special name="iteration" />
+                        <int>5</int>
+                    </mod>
+                </not>
+            </condition>
+            <then>
+                <set var="printed"><bool>true</bool></set>
+                <print newline="false">Buzz</print>
+            </then>
+        </if>
+        <if>
+            <condition>
+                <not><get var="printed" /></not>
+            </condition>
+            <then>
+                <print newline="false"><special name="iteration" /></print>
+            </then>
+        </if>
+        <print />
+    </loop>
+</program>

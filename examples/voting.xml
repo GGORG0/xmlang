@@ -1,0 +1,40 @@
+<!-- Voting - Demonstrates the use of if statements, simple string interpolation and user interaction -->
+
+<program>
+    <print newline="false">Enter your age: <space /></print>
+
+    <set var="age">
+        <int><readline /></int>
+    </set>
+
+    <set var="suffix">
+        <if>
+            <condition>
+                <eq>
+                    <get var="age" />
+                    <int>1</int>
+                </eq>
+            </condition>
+            <then><string /></then>
+            <else>s</else>
+        </if>
+    </set>
+
+    <print>You are <space /> <get var="age" /> <space /> year<get var="suffix" /> <space /> old.</print>
+
+    <print>
+        You can
+        <space />
+        <if>
+            <condition>
+                <ge>
+                    <get var="age" />
+                    <int>18</int>
+                </ge>
+            </condition>
+            <then><string /></then>
+            <else><string>not <space /></string></else>
+        </if>
+        vote.
+    </print>
+</program>

@@ -1,0 +1,11 @@
+<!-- Greet - Reads input from the user, saves it to a variable and echoes it back -->
+
+<program>
+    <print newline="false">Enter your name: <space /></print>
+
+    <set var="name">
+        <readline />
+    </set>
+
+    <print>Hello, <space /> <get var="name" />!</print>
+</program>
