@@ -10,6 +10,9 @@ echo "" >> README.md
 echo "Click the ⚙️ emoji next to each example to run it in the [XMLang Playground]($playground_url)." >> README.md
 echo "" >> README.md
 
+echo "| Example | Description |" >> README.md
+echo "| ------- | ----------- |" >> README.md
+
 for file in *.xml; do
     header=$(head -n 1 "$file" | sed 's/^<!-- //; s/ -->$//')
     title="${header%% - *}"
