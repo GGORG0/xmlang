@@ -9,6 +9,7 @@ import { FitAddon } from "@xterm/addon-fit";
 import { runWasix, init, Directory } from "@wasmer/sdk";
 import { EditorView, basicSetup } from "codemirror";
 import { xml } from "@codemirror/lang-xml";
+import { oneDark } from "@codemirror/theme-one-dark";
 
 async function main() {
   await init();
@@ -42,6 +43,7 @@ async function main() {
         ".cm-scroller": { overflow: "auto" },
       }),
       EditorView.lineWrapping,
+      oneDark,
     ],
     parent: document.getElementById("editor")!,
   });
