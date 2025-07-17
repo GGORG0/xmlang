@@ -7,3 +7,4 @@ title = "XMLang docs"
 [output.html]
 git-repository-url = "https://github.com/GGORG0/xmlang"
 git-repository-icon = "fa-github"
+hash-files = true
