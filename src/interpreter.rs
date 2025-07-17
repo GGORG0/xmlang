@@ -636,6 +636,60 @@ pub fn interpret(
             Value::Bool(all_greater_than_or_equal)
         }
 
+        "starts-with" => {
+            ensure!(
+                element.children.len() == 2,
+                "Expected exactly 2 children in <starts-with> element"
+            );
+
+            let values = element
+                .children
+                .iter()
+                .map(|child| interpret(child, depth + 1, variables, specials, functions))
+                .collect::<Result<Vec<Value>>>()?;
+
+            let left = &values[0];
+            let right = &values[1];
+
+            Value::Bool(left.to_string().starts_with(&right.to_string()))
+        }
+
+        "ends-with" => {
+            ensure!(
+                element.children.len() == 2,
+                "Expected exactly 2 children in <ends-with> element"
+            );
+
+            let values = element
+                .children
+                .iter()
+                .map(|child| interpret(child, depth + 1, variables, specials, functions))
+                .collect::<Result<Vec<Value>>>()?;
+
+            let left = &values[0];
+            let right = &values[1];
+
+            Value::Bool(left.to_string().ends_with(&right.to_string()))
+        }
+
+        "contains" => {
+            ensure!(
+                element.children.len() == 2,
+                "Expected exactly 2 children in <contains> element"
+            );
+
+            let values = element
+                .children
+                .iter()
+                .map(|child| interpret(child, depth + 1, variables, specials, functions))
+                .collect::<Result<Vec<Value>>>()?;
+
+            let left = &values[0];
+            let right = &values[1];
+
+            Value::Bool(left.to_string().contains(&right.to_string()))
+        }
+
         "try" => {
             ensure!(
                 element.children.len() == 2,
