@@ -122,9 +122,12 @@ const encoder = new TextEncoder();
 
 function connectStreams(instance: Instance, term: Terminal) {
     const stdin = instance.stdin?.getWriter();
-    const listener = term.onData((data) =>
-        stdin?.write(encoder.encode(data)).catch(console.error)
-    );
+    const listener = term.onData((data) => {
+        if (data === '\r') {
+            data += '\n';
+        }
+        stdin?.write(encoder.encode(data)).catch(console.error);
+    });
 
     instance.stdout.pipeTo(
         new WritableStream({ write: (chunk) => term.write(chunk) })
