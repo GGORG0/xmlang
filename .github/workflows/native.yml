@@ -158,8 +158,7 @@ jobs:
         shell: bash
         run: |
           crate_name="${{ needs.get-crate-metadata.outputs.crate_name }}"
-          commit_hash="$(git rev-parse --short HEAD)"
-          archive_name="${crate_name}-${commit_hash}-${{ matrix.target }}"
+          archive_name="${crate_name}-${{ matrix.target }}"
           echo "archive name: $archive_name"
           echo "ARCHIVE=$archive_name" >> $GITHUB_ENV
 
