@@ -28,7 +28,7 @@ const cargoBuildPlugin = {
             console.log("Rebuilt WASM module successfully.");
             resolve();
           }
-        }
+        },
       );
     });
   },

@@ -93,10 +93,10 @@ function connectStreams(instance: Instance, term: Terminal) {
   });
 
   instance.stdout.pipeTo(
-    new WritableStream({ write: (chunk) => term.write(chunk) })
+    new WritableStream({ write: (chunk) => term.write(chunk) }),
   );
   instance.stderr.pipeTo(
-    new WritableStream({ write: (chunk) => term.write(chunk) })
+    new WritableStream({ write: (chunk) => term.write(chunk) }),
   );
 
   return listener;
@@ -116,13 +116,13 @@ async function getCode(): Promise<string> {
 
   if (gistId && (owner || repo || branch || file)) {
     alert(
-      "Warning: Both Gist and GitHub repo parameters are present. Only one source will be loaded. Repo takes precedence if all repo parameters are set."
+      "Warning: Both Gist and GitHub repo parameters are present. Only one source will be loaded. Repo takes precedence if all repo parameters are set.",
     );
   }
 
   if ((owner || repo || branch || file) && !(owner && repo && branch && file)) {
     alert(
-      "Error: To load from a GitHub repo, you must specify owner, repo, branch, and file parameters."
+      "Error: To load from a GitHub repo, you must specify owner, repo, branch, and file parameters.",
     );
     return localStorage.getItem("playgroundCode") || defaultCode;
   }
@@ -131,7 +131,7 @@ async function getCode(): Promise<string> {
     if (localStorage.getItem("playgroundCode")) {
       if (
         !confirm(
-          `Loading code from a ${source} will overwrite your saved code. Continue?`
+          `Loading code from a ${source} will overwrite your saved code. Continue?`,
         )
       ) {
         return localStorage.getItem("playgroundCode") || "";
@@ -183,7 +183,7 @@ async function getFromRepo(
   owner: string,
   repo: string,
   branch: string,
-  path: string
+  path: string,
 ): Promise<string> {
   const url = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}`;
   const response = await fetch(url);

@@ -17,7 +17,7 @@ jobs:
         with:
           toolchain: stable
           components: rustfmt
-      - name: Check formatting
+      - name: Run rustfmt
         run: cargo fmt --check
 
   clippy:
@@ -32,3 +32,47 @@ jobs:
           components: clippy
       - name: Run clippy
         run: cargo clippy -- -D warnings
+
+  prettier:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: "pnpm"
+          cache-dependency-path: "./playground/pnpm-lock.yaml"
+      - name: Install NPM dependencies
+        working-directory: "./playground"
+        run: pnpm install
+      - name: Run prettier
+        working-directory: "./playground"
+        run: pnpm run format:check
+
+  eslint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: "pnpm"
+          cache-dependency-path: "./playground/pnpm-lock.yaml"
+      - name: Install NPM dependencies
+        working-directory: "./playground"
+        run: pnpm install
+      - name: Run eslint
+        working-directory: "./playground"
+        run: pnpm run lint
