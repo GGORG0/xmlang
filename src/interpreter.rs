@@ -335,6 +335,21 @@ pub fn interpret(
             return Err(BlockControl::Continue.into());
         }
 
+        "exit" => {
+            ensure!(
+                element.children.is_empty(),
+                "Expected no children in <exit> element"
+            );
+
+            let code = element
+                .attributes
+                .get("code")
+                .and_then(|s| s.parse::<i32>().ok())
+                .unwrap_or(0);
+
+            std::process::exit(code);
+        }
+
         "get" => {
             if let Some(name) = element.attributes.get("var") {
                 if let Some(var) = variables.get(name).cloned() {
