@@ -14,6 +14,13 @@ body {
   grid-template-columns: 1fr 1fr;
 }
 
+#editor {
+  height: 100%;
+  width: 100%;
+  overflow: auto;
+  display: flex;
+}
+
 #terminal {
   position: relative;
   width: 100%;

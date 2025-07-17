@@ -25,12 +25,17 @@ async function main() {
 
   term.writeln("### Loading... ###");
 
-  const initialProgram = `<program>
-  <print>Hello, World!</print>
-</program>`;
+  const initialProgram = await getCode();
 
   const dir = new Directory({
     "/playground.xml": initialProgram,
+  });
+
+  const saveOnEdit = EditorView.updateListener.of((update) => {
+    if (update.docChanged) {
+      const code = update.state.doc.toString();
+      localStorage.setItem("playgroundCode", code);
+    }
   });
 
   const editor = new EditorView({
@@ -44,6 +49,7 @@ async function main() {
       }),
       EditorView.lineWrapping,
       oneDark,
+      saveOnEdit,
     ],
     parent: document.getElementById("editor")!,
   });
@@ -54,6 +60,7 @@ async function main() {
     term.clear();
 
     const code = editor.state.doc.toString();
+    localStorage.setItem("playgroundCode", code);
     await dir.writeFile("/playground.xml", code);
 
     const instance = await runWasix(module, {
@@ -93,6 +100,59 @@ function connectStreams(instance: Instance, term: Terminal) {
   );
 
   return listener;
+}
+
+const defaultCode = `<program>
+  <print>Hello, World!</print>
+</program>`;
+
+async function getCode(): Promise<string> {
+  const params = new URLSearchParams(window.location.search);
+  const gistId = params.get("gist");
+  if (gistId) {
+    if (localStorage.getItem("playgroundCode")) {
+      if (
+        !confirm(
+          "Loading code from a Gist will overwrite your saved code. Continue?"
+        )
+      ) {
+        return localStorage.getItem("playgroundCode") || "";
+      }
+    }
+    try {
+      const code = await getGist(gistId);
+      history.replaceState(null, "", "/");
+      localStorage.setItem("playgroundCode", code);
+      return code;
+    } catch (error) {
+      console.error("Failed to fetch gist:", error);
+      alert("Failed to load code from gist.");
+      return localStorage.getItem("playgroundCode") || defaultCode;
+    }
+  } else {
+    return localStorage.getItem("playgroundCode") || defaultCode;
+  }
+}
+
+async function getGist(id: string): Promise<string> {
+  const response = await fetch(`https://api.github.com/gists/${id}`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch gist: ${response.statusText}`);
+  }
+
+  const gistData = await response.json();
+  const files = gistData.files;
+  const firstFileKey = Object.keys(files)[0];
+  if (!firstFileKey) {
+    throw new Error("Gist contains no files");
+  }
+
+  const content = files[firstFileKey].content;
+  if (content == null) {
+    throw new Error("File content not available");
+  }
+
+  return content;
 }
 
 main();
