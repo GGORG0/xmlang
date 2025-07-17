@@ -35,11 +35,38 @@ const cargoBuildPlugin = {
     },
 };
 
-const coiServiceWorkerPlugin = viteStaticCopy({
+const mdbookBuildPlugin = {
+    name: 'mdbook-build',
+    buildStart: () => {
+        return new Promise<void>((resolve, reject) => {
+            exec(
+                'mdbook build ..',
+                { env: { ...process.env, RUST_LOG: 'error' } },
+                (err, stdout, stderr) => {
+                    if (err) {
+                        console.log('Stdout:', stdout);
+                        console.log('Stderr:', stderr);
+                        reject(err);
+                    } else {
+                        console.log('Rebuilt docs successfully.');
+                        resolve();
+                    }
+                }
+            );
+        });
+    },
+};
+
+const staticCopyPlugin = viteStaticCopy({
     targets: [
         {
             src: 'node_modules/coi-serviceworker/coi-serviceworker.min.js',
             dest: '.',
+        },
+        {
+            src: '../book',
+            dest: '.',
+            rename: 'docs',
         },
     ],
 });
@@ -50,8 +77,16 @@ export default defineConfig({
             'Cross-Origin-Opener-Policy': 'same-origin',
             'Cross-Origin-Embedder-Policy': 'require-corp',
         },
+        fs: {
+            allow: ['..'],
+        },
     },
-    plugins: [wasmContentTypePlugin, cargoBuildPlugin, coiServiceWorkerPlugin],
+    plugins: [
+        wasmContentTypePlugin,
+        cargoBuildPlugin,
+        mdbookBuildPlugin,
+        staticCopyPlugin,
+    ],
     optimizeDeps: {
         exclude: ['@wasmer/sdk'],
     },

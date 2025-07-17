@@ -21,6 +21,11 @@
             extensions = ["rust-src" "rust-analyzer"];
             targets = ["wasm32-wasip1"];
           }))
+
+          pkgs.nodejs
+          pkgs.pnpm
+
+          pkgs.mdbook
       ];
     };
   };

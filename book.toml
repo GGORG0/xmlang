@@ -1,0 +1,5 @@
+[book]
+authors = ["GGORG"]
+language = "en"
+src = "docs"
+title = "XMLang docs"
