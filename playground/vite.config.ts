@@ -1,59 +1,59 @@
-import { defineConfig } from "vite";
-import { exec } from "node:child_process";
-import { viteStaticCopy } from "vite-plugin-static-copy";
+import { defineConfig } from 'vite';
+import { exec } from 'node:child_process';
+import { viteStaticCopy } from 'vite-plugin-static-copy';
 
 const wasmContentTypePlugin = {
-  name: "wasm-content-type-plugin",
-  configureServer(server) {
-    server.middlewares.use((req, res, next) => {
-      if (req.url.endsWith(".wasm")) {
-        res.setHeader("Content-Type", "application/wasm");
-      }
-      next();
-    });
-  },
+    name: 'wasm-content-type-plugin',
+    configureServer(server) {
+        server.middlewares.use((req, res, next) => {
+            if (req.url.endsWith('.wasm')) {
+                res.setHeader('Content-Type', 'application/wasm');
+            }
+            next();
+        });
+    },
 };
 
 const cargoBuildPlugin = {
-  name: "cargo-build",
-  buildStart: () => {
-    return new Promise<void>((resolve, reject) => {
-      exec(
-        "cargo build --target=wasm32-wasip1 --manifest-path=../Cargo.toml --release --quiet",
-        (err, stdout, stderr) => {
-          if (err) {
-            console.log("Stdout:", stdout);
-            console.log("Stderr:", stderr);
-            reject(err);
-          } else {
-            console.log("Rebuilt WASM module successfully.");
-            resolve();
-          }
-        },
-      );
-    });
-  },
+    name: 'cargo-build',
+    buildStart: () => {
+        return new Promise<void>((resolve, reject) => {
+            exec(
+                'cargo build --target=wasm32-wasip1 --manifest-path=../Cargo.toml --release --quiet',
+                (err, stdout, stderr) => {
+                    if (err) {
+                        console.log('Stdout:', stdout);
+                        console.log('Stderr:', stderr);
+                        reject(err);
+                    } else {
+                        console.log('Rebuilt WASM module successfully.');
+                        resolve();
+                    }
+                }
+            );
+        });
+    },
 };
 
 const coiServiceWorkerPlugin = viteStaticCopy({
-  targets: [
-    {
-      src: "node_modules/coi-serviceworker/coi-serviceworker.min.js",
-      dest: ".",
-    },
-  ],
+    targets: [
+        {
+            src: 'node_modules/coi-serviceworker/coi-serviceworker.min.js',
+            dest: '.',
+        },
+    ],
 });
 
 export default defineConfig({
-  server: {
-    headers: {
-      "Cross-Origin-Opener-Policy": "same-origin",
-      "Cross-Origin-Embedder-Policy": "require-corp",
+    server: {
+        headers: {
+            'Cross-Origin-Opener-Policy': 'same-origin',
+            'Cross-Origin-Embedder-Policy': 'require-corp',
+        },
     },
-  },
-  plugins: [wasmContentTypePlugin, cargoBuildPlugin, coiServiceWorkerPlugin],
-  optimizeDeps: {
-    exclude: ["@wasmer/sdk"],
-  },
-  base: "./",
+    plugins: [wasmContentTypePlugin, cargoBuildPlugin, coiServiceWorkerPlugin],
+    optimizeDeps: {
+        exclude: ['@wasmer/sdk'],
+    },
+    base: './',
 });
