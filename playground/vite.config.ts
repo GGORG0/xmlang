@@ -13,6 +13,27 @@ const wasmContentTypePlugin = {
   },
 };
 
+const cargoBuildPlugin = {
+  name: "cargo-build",
+  buildStart: () => {
+    return new Promise<void>((resolve, reject) => {
+      exec(
+        "cargo build --target=wasm32-wasip1 --manifest-path=../Cargo.toml --release --quiet",
+        (err, stdout, stderr) => {
+          if (err) {
+            console.log("Stdout:", stdout);
+            console.log("Stderr:", stderr);
+            reject(err);
+          } else {
+            console.log("Rebuilt WASM module successfully.");
+            resolve();
+          }
+        }
+      );
+    });
+  },
+};
+
 export default defineConfig({
   server: {
     headers: {
@@ -20,7 +41,7 @@ export default defineConfig({
       "Cross-Origin-Embedder-Policy": "require-corp",
     },
   },
-  plugins: [wasmContentTypePlugin],
+  plugins: [wasmContentTypePlugin, cargoBuildPlugin],
   optimizeDeps: {
     exclude: ["@wasmer/sdk"],
   },
