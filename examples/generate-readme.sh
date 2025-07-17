@@ -3,7 +3,7 @@
 cd "$(dirname "$0")" || exit 1
 
 playground_url="https://xmlang.ggorg.xyz/"
-playground_prefix="${playground_url}?owner=GGORG0&repo=xmlang&branch=main&file=examples/"
+playground_prefix="${playground_url}?owner=GGORG0&repo=xmlang&branch=master&file=examples/"
 
 echo "# XMLang examples" > README.md
 echo "" >> README.md
