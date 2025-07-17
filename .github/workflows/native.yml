@@ -135,6 +135,11 @@ jobs:
           echo "target flag is: ${{ env.TARGET_FLAGS }}"
           echo "target dir is: ${{ env.TARGET_DIR }}"
 
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          env-vars: "CARGO CC CFLAGS CXX CMAKE RUST TARGET"
+
       - name: Build release binary
         shell: bash
         run: |

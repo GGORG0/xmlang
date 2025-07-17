@@ -42,6 +42,9 @@ jobs:
           cache: "pnpm"
           cache-dependency-path: "./playground/pnpm-lock.yaml"
 
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+
       - name: Build WASM module
         run: cargo build --target=wasm32-wasip1 --release --verbose
 
