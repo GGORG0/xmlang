@@ -45,4 +45,5 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ["@wasmer/sdk"],
   },
+  base: "./",
 });
