@@ -1,4 +1,8 @@
 import './style.css';
+import '@fontsource/jetbrains-mono/400.css';
+import '@fontsource/jetbrains-mono/400-italic.css';
+import '@fontsource/jetbrains-mono/700.css';
+import '@fontsource/jetbrains-mono/700-italic.css';
 
 import xmlangUrl from '../../target/wasm32-wasip1/release/xmlang.wasm?url';
 
@@ -9,7 +13,7 @@ import { EditorView, keymap } from '@codemirror/view';
 import { basicSetup } from 'codemirror';
 
 import type { Instance } from '@wasmer/sdk';
-import { Directory, init, runWasix } from '@wasmer/sdk';
+import { Directory, init, Runtime, runWasix } from '@wasmer/sdk';
 
 import { FitAddon } from '@xterm/addon-fit';
 import { Terminal } from '@xterm/xterm';
@@ -18,13 +22,29 @@ import '@xterm/xterm/css/xterm.css';
 async function main() {
     await init();
 
-    const term = new Terminal({ cursorBlink: true, convertEol: true });
+    const fontFaceSet = await document.fonts.ready;
+    await Promise.all(Array.from(fontFaceSet).map((el) => el.load()));
+
+    const terminalContainer = document.getElementById('terminal')!;
+    const term = new Terminal({
+        cursorBlink: true,
+        convertEol: true,
+        fontFamily: 'JetBrains Mono',
+    });
     const fit = new FitAddon();
     term.loadAddon(fit);
-    term.open(document.getElementById('terminal')!);
+    term.open(terminalContainer);
     fit.fit();
-    window.addEventListener('resize', () => {
-        fit.fit();
+    const resizeObserver = new ResizeObserver(() => {
+        requestAnimationFrame(() => fit.fit());
+    });
+    resizeObserver.observe(terminalContainer);
+
+    term.onData((data) => {
+        if (data === '\r') {
+            data += '\n';
+        }
+        term.write(data);
     });
 
     term.writeln('### Loading... ###');
@@ -48,7 +68,11 @@ async function main() {
             basicSetup,
             xml(),
             EditorView.theme({
-                '&': { height: '100%', width: '100%' },
+                '&': {
+                    height: '100%',
+                    width: '100%',
+                    fontFamily: 'JetBrains Mono',
+                },
                 '.cm-scroller': { overflow: 'auto' },
             }),
             EditorView.lineWrapping,
@@ -61,6 +85,10 @@ async function main() {
 
     const module = await WebAssembly.compileStreaming(fetch(xmlangUrl));
 
+    const runtime = new Runtime();
+
+    const runButton = document.getElementById('run')!;
+
     async function run() {
         term.clear();
 
@@ -68,9 +96,12 @@ async function main() {
         localStorage.setItem('playgroundCode', code);
         await dir.writeFile('/playground.xml', code);
 
+        runButton.setAttribute('disabled', 'true');
+
         const instance = await runWasix(module, {
             args: ['/app/playground.xml'],
             mount: { '/app': dir },
+            runtime,
         });
 
         let listener = connectStreams(instance, term);
@@ -78,9 +109,11 @@ async function main() {
         await instance.wait();
         listener.dispose();
         term.writeln('\n### Program finished. ###');
+
+        runButton.removeAttribute('disabled');
     }
 
-    document.getElementById('run')?.addEventListener('click', run);
+    runButton.addEventListener('click', run);
 
     await run();
 }
@@ -89,13 +122,9 @@ const encoder = new TextEncoder();
 
 function connectStreams(instance: Instance, term: Terminal) {
     const stdin = instance.stdin?.getWriter();
-    const listener = term.onData((data) => {
-        if (data === '\r') {
-            data += '\n';
-        }
-        stdin?.write(encoder.encode(data)).catch(console.error);
-        term.write(data);
-    });
+    const listener = term.onData((data) =>
+        stdin?.write(encoder.encode(data)).catch(console.error)
+    );
 
     instance.stdout.pipeTo(
         new WritableStream({ write: (chunk) => term.write(chunk) })
