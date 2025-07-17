@@ -109,26 +109,50 @@ const defaultCode = `<program>
 async function getCode(): Promise<string> {
   const params = new URLSearchParams(window.location.search);
   const gistId = params.get("gist");
-  if (gistId) {
+  const owner = params.get("owner");
+  const repo = params.get("repo");
+  const branch = params.get("branch");
+  const file = params.get("file");
+
+  if (gistId && (owner || repo || branch || file)) {
+    alert(
+      "Warning: Both Gist and GitHub repo parameters are present. Only one source will be loaded. Repo takes precedence if all repo parameters are set."
+    );
+  }
+
+  if ((owner || repo || branch || file) && !(owner && repo && branch && file)) {
+    alert(
+      "Error: To load from a GitHub repo, you must specify owner, repo, branch, and file parameters."
+    );
+    return localStorage.getItem("playgroundCode") || defaultCode;
+  }
+
+  async function tryLoad(fetcher: () => Promise<string>, source: string) {
     if (localStorage.getItem("playgroundCode")) {
       if (
         !confirm(
-          "Loading code from a Gist will overwrite your saved code. Continue?"
+          `Loading code from a ${source} will overwrite your saved code. Continue?`
         )
       ) {
         return localStorage.getItem("playgroundCode") || "";
       }
     }
     try {
-      const code = await getGist(gistId);
+      const code = await fetcher();
       history.replaceState(null, "", "/");
       localStorage.setItem("playgroundCode", code);
       return code;
     } catch (error) {
-      console.error("Failed to fetch gist:", error);
-      alert("Failed to load code from gist.");
+      console.error(`Failed to fetch from ${source}:`, error);
+      alert(`Failed to load code from ${source}.`);
       return localStorage.getItem("playgroundCode") || defaultCode;
     }
+  }
+
+  if (owner && repo && branch && file) {
+    return tryLoad(() => getFromRepo(owner, repo, branch, file), "GitHub repo");
+  } else if (gistId) {
+    return tryLoad(() => getGist(gistId), "Gist");
   } else {
     return localStorage.getItem("playgroundCode") || defaultCode;
   }
@@ -153,6 +177,20 @@ async function getGist(id: string): Promise<string> {
   }
 
   return content;
+}
+
+async function getFromRepo(
+  owner: string,
+  repo: string,
+  branch: string,
+  path: string
+): Promise<string> {
+  const url = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch from repo: ${response.statusText}`);
+  }
+  return response.text();
 }
 
 main();
