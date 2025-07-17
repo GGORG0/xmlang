@@ -1,5 +1,6 @@
 import { defineConfig } from "vite";
 import { exec } from "node:child_process";
+import { viteStaticCopy } from "vite-plugin-static-copy";
 
 const wasmContentTypePlugin = {
   name: "wasm-content-type-plugin",
@@ -34,6 +35,15 @@ const cargoBuildPlugin = {
   },
 };
 
+const coiServiceWorkerPlugin = viteStaticCopy({
+  targets: [
+    {
+      src: "node_modules/coi-serviceworker/coi-serviceworker.min.js",
+      dest: ".",
+    },
+  ],
+});
+
 export default defineConfig({
   server: {
     headers: {
@@ -41,7 +51,7 @@ export default defineConfig({
       "Cross-Origin-Embedder-Policy": "require-corp",
     },
   },
-  plugins: [wasmContentTypePlugin, cargoBuildPlugin],
+  plugins: [wasmContentTypePlugin, cargoBuildPlugin, coiServiceWorkerPlugin],
   optimizeDeps: {
     exclude: ["@wasmer/sdk"],
   },
