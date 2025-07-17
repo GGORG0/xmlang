@@ -85,6 +85,8 @@ pub fn parse(path: &Path) -> Result<Element> {
 
             Ok(Event::Eof) => break,
 
+            Ok(Event::Comment(_)) => {}
+
             // TODO: include a code snippet
             Err(e) => bail!("Error at position {}: {:?}", reader.error_position(), e),
 
