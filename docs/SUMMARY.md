@@ -19,3 +19,4 @@
     - [String (and string operations)](./language/data_types/string.md)
 - [`<program>`](./language/program.md)
 - [`<print>`](./language/print.md)
+- [Variables](./language/variables.md)
