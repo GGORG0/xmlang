@@ -1,5 +1,20 @@
 # Language introduction
 
+All XMLang code is valid XML, and can be parsed by any XML parser.
+
+**Comments** are standard XML comments, and are ignored by the parser:
+
+```xml
+<!-- This is a comment -->
+<element attribute1="value1" attribute2="value2">
+    <child1>Child 1 content</child1>
+    <child2>Child 2 content</child2>
+    <!-- This is another comment -->
+</element>
+```
+
+**Note:** Support for **CDATA** sections and **entity references (for example `&lt;`)** is not implemented yet.
+
 ## Elements
 
 Everything in XMLang is an **XML element**.
@@ -44,9 +59,9 @@ That is equivalent to:
 
 Text content is the text that appears between the opening and closing tags of an element.
 
-It is always considered a string, and has to be converted to other types if needed.
+It is always considered a [string](./data_types/string.md), and has to be converted to other types if needed.
 
-You can mix text content with other child elements, but due to parser limitations, the whitespace between the text and the child elements is not preserved, and will be ignored.
+You can mix text content with other child elements, but due to parser limitations, the whitespace between the text and the child elements is **not preserved**, and will be ignored.
 
 ```xml
 <element attribute1="value1" attribute2="value2">
@@ -57,7 +72,7 @@ You can mix text content with other child elements, but due to parser limitation
 </element>
 ```
 
-If you want to preserve whitespace, you can use tricks like the `<space />` element or the `<join>` element, which will be explained later.
+If you want to preserve whitespace, you can use tricks like the `<space />` element or the `<join>` element.
 
 ```xml
 <program>
@@ -74,6 +89,8 @@ When mixing text content with child elements, each text node and child element i
 </element>
 ```
 
+Internally each text content node is represented as an unnamed element (`<></>`), with the text as its `_text` attribute.
+
 ## Expressions and statements
 
 There are 2 main types of elements in XMLang: **expressions** and **statements**.
@@ -82,4 +99,4 @@ Almost everything is an expression.
 The 2 are distinguished by the fact that statements contain children that aren't valid elements anywhere else in the language, for example, the `<if>` statement contains `<condition>`, `<then>`, and optionally `<else>` elements, which are not valid outside an `<if>` statement.
 
 Every element returns a value, which can be used by its parent element.
-If an element does not return a value, it is considered to return `null`.
+If an element does not return a value, it is considered to return [`null`](./data_types/null.md).

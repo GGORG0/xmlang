@@ -54,11 +54,7 @@ export default defineConfig({
             allow: ['..'],
         },
     },
-    plugins: [
-        wasmContentTypePlugin,
-        cargoBuildPlugin,
-        staticCopyPlugin,
-    ],
+    plugins: [wasmContentTypePlugin, cargoBuildPlugin, staticCopyPlugin],
     optimizeDeps: {
         exclude: ['@wasmer/sdk'],
     },

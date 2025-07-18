@@ -24,13 +24,6 @@ impl Value {
         matches!(self, Self::Null)
     }
 
-    pub fn as_null(&self) -> Option<()> {
-        match self {
-            Self::Null => Some(()),
-            _ => None,
-        }
-    }
-
     pub fn as_int(&self) -> Option<i64> {
         match self {
             Self::Null => Some(0),
@@ -64,13 +57,13 @@ impl Value {
         }
     }
 
-    pub fn convert_to(&self, target_type: &Value) -> Option<Value> {
+    pub fn convert_to(&self, target_type: &Self) -> Option<Self> {
         match target_type {
-            Value::Null => self.as_null().map(|_| Value::Null),
-            Value::Int(_) => self.as_int().map(Value::Int),
-            Value::Float(_) => self.as_float().map(Value::Float),
-            Value::Bool(_) => Some(Value::Bool(self.as_bool())),
-            Value::Str(_) => Some(Value::Str(self.to_string())),
+            Self::Null => Some(Self::Null),
+            Self::Int(_) => self.as_int().map(Self::Int),
+            Self::Float(_) => self.as_float().map(Self::Float),
+            Self::Bool(_) => Some(Self::Bool(self.as_bool())),
+            Self::Str(_) => Some(Self::Str(self.to_string())),
         }
     }
 

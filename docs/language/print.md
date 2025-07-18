@@ -1,12 +1,14 @@
 # `<print>`
 
+Outputs text to the standard output.
+
 ## Attributes
 
-- `newline` (bool): Whether to print a newline after the output. Defaults to `true`. Useful for reading input from the user or printing something in chunks.
+- `newline` ([bool](./data_types/bool.md), optional): Whether to print a newline after the output. Defaults to `true`. Useful for reading input from the user or printing something in chunks. If set to `false`, the next output will continue on the same line.
 
 ## Children
 
-All children will be converted to strings and concatenated together (without any separators), in the order they appear in the XML document.
+All its children are evaluated, converted to [string](./data_types/string.md)s and concatenated together (without any separators), in the order they appear in the XML document.
 
 ## Example
 
