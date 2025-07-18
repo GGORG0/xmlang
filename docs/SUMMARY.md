@@ -23,7 +23,7 @@
 - [Blocks](./language/blocks.md)
 - [Specials](./language/specials.md)
 - [Error handling](./language/errors.md)
-- [Mathematical operations]()
+- [Mathematical operations](./language/math.md)
 - [Logical operations]()
 - [`<if>`]()
 - [`<loop>`]()

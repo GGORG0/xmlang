@@ -208,12 +208,12 @@ impl Neg for Value {
             Self::Int(value) => Ok(Self::Int(-value)),
             Self::Float(value) => Ok(Self::Float(-value)),
             Self::Bool(_) => Err(OperationIncompatibleTypesError {
-                operation: "negate".to_string(),
+                operation: "arithmetically negate".to_string(),
                 a: self,
                 b: None,
             }),
             Self::Str(_) => Err(OperationIncompatibleTypesError {
-                operation: "negate".to_string(),
+                operation: "arithmetically negate".to_string(),
                 a: self,
                 b: None,
             }),
