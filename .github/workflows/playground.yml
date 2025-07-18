@@ -61,6 +61,9 @@ jobs:
         working-directory: "./playground"
         run: pnpm run build
 
+      - name: Build docs
+        run: mdbook build --dest-dir ./playground/dist/docs
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 

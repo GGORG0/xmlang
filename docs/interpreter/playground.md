@@ -48,7 +48,7 @@ https://xmlang.ggorg.xyz/?owner=GGORG0&repo=xmlang&branch=master&file=examples/h
     - [Node.js](https://nodejs.org/)
     - [Pnpm](https://pnpm.io/) (`corepack enable`)
     - [Rust](https://rustup.rs/) (with the `wasm32-wasip1` target: `rustup target add wasm32-wasip1`) - to build the WebAssembly module
-    - [mdBook](https://rust-lang.github.io/mdBook/) - to build the documentation
+    - [mdBook](https://rust-lang.github.io/mdBook/) (optional) - to build the documentation
 
 2. Clone the repository:
 
@@ -68,26 +68,34 @@ https://xmlang.ggorg.xyz/?owner=GGORG0&repo=xmlang&branch=master&file=examples/h
     cargo build --release --target wasm32-wasip1
     ```
 
-5. Change to the `playground` directory:
+5. Build the documentation (optional):
+
+    ```bash
+    mdbook build
+    ```
+
+    The documentation will be built in the `book` directory.
+
+6. Change to the `playground` directory:
 
     ```bash
     cd playground
     ```
 
-6. Install the dependencies:
+7. Install the dependencies:
 
     ```bash
     pnpm install
     ```
 
-7. Build the project:
+8. Build the project:
 
     ```bash
     pnpm build
     ```
- 
+
     Or start the development server:
- 
+
     ```bash
     pnpm dev
     ```
