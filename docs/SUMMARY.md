@@ -26,7 +26,7 @@
 - [Mathematical operations](./language/math.md)
 - [Logical operations](./language/logic.md)
 - [`<if>`](./language/if.md)
-- [`<loop>`]()
+- [`<loop>`](./language/loop.md)
 - [Functions]()
 - [`<exit />`](./language/exit.md)
 - [`<delay>`](./language/delay.md)

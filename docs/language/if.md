@@ -22,6 +22,10 @@ It is a [block](./blocks.md).
 
 There must be exactly 1 `<then>` element as a child of `<if>`/`<elif>`.
 
+#### Specials
+
+The `<then>` element can access the result of the `<condition>` evaluation using the [`<special>`](./specials.md) element with the `name` attribute set to `condition`. This will return the result as the type of the value returned by the child of `<condition>` (but before being converted to a [boolean](./data_types/bool.md)).
+
 ### `<elif>`
 
 The `<elif>` element is used to define an additional condition that will be evaluated if the `<condition>` evaluates to `false` and all previous `<elif>` conditions also evaluated to `false`.
