@@ -178,5 +178,3 @@ It accepts exactly 2 children - the first is the string to check, and the second
     <string>!</string>
 </contains> <!-- true -->
 ```
-
-## TODO: `<replace>`

@@ -2,7 +2,7 @@
 
 Specials are constants set by a containing element.
 
-Examples of specials include the error caught by a [`<try>`](./errors.md#try) element, or the attributes and children passed to a function. <!-- TODO: link to functions -->
+Examples of specials include the error caught by a [`<try>`](./errors.md#try) element, or the attributes and children passed to a [function](./functions.md).
 
 ## `<special>`
 

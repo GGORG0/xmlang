@@ -4,7 +4,7 @@ Blocks are elements, that execute their children in the order they appear, and r
 
 Blocks **do not** have their own scope, meaning that [variables](./variables.md) set inside a block are accessible outside of it, and variables set outside of a block are accessible inside it.
 
-Many elements in XMLang are blocks, such as [`<program>`](./program.md), [`<block>`](#block), `<loop>`, `<if>`'s children, [`<try>`](./errors.md#try)'s children and functions. <!-- TODO: link to loop, if, function -->
+Many elements in XMLang are blocks, such as [`<program>`](./program.md), [`<block>`](#block), [`<loop>`](./loop.md), ;[`<if>`](./if.md)'s children, [`<try>`](./errors.md#try)'s children and [functions](./functions.md).
 
 ## `<block>`
 
