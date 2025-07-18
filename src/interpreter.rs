@@ -452,7 +452,7 @@ pub fn interpret(
             let child = &element.children[0];
             let value = interpret(child, depth + 1, variables, specials, functions)?;
 
-            (!value)?
+            !value
         }
 
         "and" => {

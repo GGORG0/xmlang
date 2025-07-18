@@ -222,20 +222,10 @@ impl Neg for Value {
 }
 
 impl Not for Value {
-    type Output = Result<Self, OperationIncompatibleTypesError>;
+    type Output = Self;
 
     fn not(self) -> Self::Output {
-        match self {
-            Self::Null => Ok(Self::Null),
-            Self::Int(value) => Ok(Self::Bool(value == 0)),
-            Self::Float(value) => Ok(Self::Bool(value == 0.0)),
-            Self::Bool(value) => Ok(Self::Bool(!value)),
-            Self::Str(_) => Err(OperationIncompatibleTypesError {
-                operation: "logically negate".to_string(),
-                a: self,
-                b: None,
-            }),
-        }
+        Self::Bool(!self.as_bool())
     }
 }
 
