@@ -30,3 +30,4 @@
 - [Functions](./language/functions.md)
 - [`<exit />`](./language/exit.md)
 - [`<delay>`](./language/delay.md)
+- [`<rand />`](./language/rand.md)

@@ -1079,6 +1079,32 @@ pub fn interpret(
             }
         }
 
+        "rand" => {
+            ensure!(
+                element.children.is_empty(),
+                "Expected no children in <rand> element"
+            );
+
+            let min = element
+                .attributes
+                .get("min")
+                .and_then(|s| s.parse::<i64>().ok())
+                .unwrap_or(0);
+
+            let max = element
+                .attributes
+                .get("max")
+                .and_then(|s| s.parse::<i64>().ok())
+                .unwrap_or(i64::MAX);
+
+            if min >= max {
+                bail!("`min` must be less than `max` in <rand> element");
+            }
+
+            let random_value = rand::random_range(min..max);
+            Value::Int(random_value)
+        }
+
         _ => bail!("Unknown element: {}", element.name),
     })
 }
