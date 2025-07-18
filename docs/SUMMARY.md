@@ -25,7 +25,7 @@
 - [Error handling](./language/errors.md)
 - [Mathematical operations](./language/math.md)
 - [Logical operations](./language/logic.md)
-- [`<if>`]()
+- [`<if>`](./language/if.md)
 - [`<loop>`]()
 - [Functions]()
 - [`<exit />`](./language/exit.md)
