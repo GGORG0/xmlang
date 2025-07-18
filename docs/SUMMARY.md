@@ -18,5 +18,5 @@
     - [Boolean](./language/data_types/bool.md)
     - [String (and string operations)](./language/data_types/string.md)
 - [`<program>`](./language/program.md)
-- [`<print>`](./language/print.md)
+- [Input/output](./language/io.md)
 - [Variables](./language/variables.md)
