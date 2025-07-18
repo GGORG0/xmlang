@@ -20,3 +20,6 @@
 - [`<program>`](./language/program.md)
 - [Input/output](./language/io.md)
 - [Variables](./language/variables.md)
+- [Blocks](./language/blocks.md)
+- [Specials](./language/specials.md)
+- [Error handling](./language/errors.md)

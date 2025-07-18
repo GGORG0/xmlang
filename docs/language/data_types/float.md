@@ -2,8 +2,10 @@
 
 [**Type name:**](./type.md) `float`
 
+**Rust type:** [`f64`](https://doc.rust-lang.org/std/primitive.f64.html)
+
 A float is a number that can have a fractional part, represented in decimal notation.
-Under the hood, floats are represented as 64-bit double-precision floating-point numbers (Rust's `f64`).
+Under the hood, floats are represented as 64-bit double-precision floating-point numbers.
 
 ```xml
 <float>1.0</float>

@@ -2,8 +2,10 @@
 
 [**Type name:**](./type.md) `int`
 
+**Rust type:** [`i64`](https://doc.rust-lang.org/std/primitive.i64.html)
+
 An integer is a whole number, which can be positive, negative, or zero.
-Under the hood, integers are represented as 64-bit signed integers (Rust's `i64`).
+Under the hood, integers are represented as 64-bit signed integers.
 
 ```xml
 <int>42</int>

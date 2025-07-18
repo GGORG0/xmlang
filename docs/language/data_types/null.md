@@ -2,6 +2,8 @@
 
 [**Type name:**](./type.md) `null`
 
+**Rust type:** [`()`](https://doc.rust-lang.org/std/primitive.unit.html)
+
 This is the most basic data type, representing the absence of a value.
 
 ```xml

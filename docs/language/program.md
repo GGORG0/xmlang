@@ -12,6 +12,7 @@ This is the simplest XMLang program, which prints `Hello, world!` to the standar
 ```
 
 The `<program>` element can contain any number of elements, which are executed in the order they appear in the document.
+It is a [block](./blocks.md) - [`<return>`](./blocks.md#return) can be used to stop its execution. The returned value of the `<program>` element is discarded.
 
 The `<program>` element is **only** valid as the root element of the document.
 It cannot be used anywhere else in the document.

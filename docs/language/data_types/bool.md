@@ -2,6 +2,8 @@
 
 [**Type name:**](./type.md) `bool`
 
+**Rust type:** [`bool`](https://doc.rust-lang.org/std/primitive.bool.html)
+
 A boolean is a data type that can have one of two values: `true` or `false`.
 
 ```xml

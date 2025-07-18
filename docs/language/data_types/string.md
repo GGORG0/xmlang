@@ -2,7 +2,9 @@
 
 [**Type name:**](./type.md) `string`
 
-A string is a UTF-8 encoded sequence of characters (under the hood, it's represented as a Rust `String`).
+**Rust type:** [`String`](https://doc.rust-lang.org/std/string/struct.String.html)
+
+A string is a UTF-8 encoded sequence of characters.
 
 All [text content](../README.md#text-content) in XMLang is considered a string, and wrapping it in a `<string>` element is optional, although sometimes it's necessary for, for example, concatenation - it ensures that the value is treated as a single string, rather than multiple children.
 
