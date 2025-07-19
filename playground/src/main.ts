@@ -1,8 +1,12 @@
-import './style.css';
-import '@fontsource/jetbrains-mono/400.css';
+import '@fontsource/inter/400-italic.css';
+import '@fontsource/inter/400.css';
+import '@fontsource/inter/700-italic.css';
+import '@fontsource/inter/700.css';
 import '@fontsource/jetbrains-mono/400-italic.css';
-import '@fontsource/jetbrains-mono/700.css';
+import '@fontsource/jetbrains-mono/400.css';
 import '@fontsource/jetbrains-mono/700-italic.css';
+import '@fontsource/jetbrains-mono/700.css';
+import './style.css';
 
 import xmlangUrl from '../../target/wasm32-wasip1/release/xmlang.wasm?url';
 
@@ -30,6 +34,7 @@ async function main() {
         cursorBlink: true,
         convertEol: true,
         fontFamily: 'JetBrains Mono',
+        fontSize: 16,
     });
     const fit = new FitAddon();
     term.loadAddon(fit);
@@ -71,9 +76,12 @@ async function main() {
                 '&': {
                     height: '100%',
                     width: '100%',
-                    fontFamily: 'JetBrains Mono',
                 },
-                '.cm-scroller': { overflow: 'auto' },
+                '.cm-scroller': {
+                    overflow: 'auto',
+                    fontFamily: 'JetBrains Mono',
+                    fontSize: '16px',
+                },
             }),
             EditorView.lineWrapping,
             oneDark,
