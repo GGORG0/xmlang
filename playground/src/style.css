@@ -48,6 +48,12 @@ body {
     text-decoration: none;
 }
 
+@media screen and (max-width: 500px) {
+    #links a {
+        font-size: 0.8rem;
+    }
+}
+
 #run {
     margin-left: auto;
     background-color: #98c379;
@@ -59,6 +65,13 @@ body {
     transition:
         background-color 0.3s ease,
         color 0.3s ease;
+}
+
+@media screen and (max-width: 500px) {
+    #run {
+        font-size: 0.8rem;
+        padding: 8px 12px;
+    }
 }
 
 #run:hover {
